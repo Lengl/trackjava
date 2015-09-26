@@ -1,4 +1,4 @@
-package com.github.lengl;
+package com.github.lengl.Authorization;
 
 public class User {
   private final String name;

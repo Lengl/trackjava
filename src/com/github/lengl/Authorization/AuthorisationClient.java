@@ -1,4 +1,4 @@
-package com.github.lengl;
+package com.github.lengl.Authorization;
 
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
