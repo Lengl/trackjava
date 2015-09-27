@@ -6,21 +6,24 @@ import com.sun.istack.internal.Nullable;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class PasswordStore {
   private Map<User, String> passMap = new HashMap<User, String>();
   private Map<String, User> userMap = new HashMap<String, User>();
   private BufferedWriter dbWriter;
   private static final String separator = new String(";");
+  private static Logger log = Logger.getLogger(PasswordStore.class.getName());
 
   public PasswordStore(String filename) throws IOException {
     File file = new File(filename);
     if(!file.exists()) {
       file.createNewFile();
+      log.info("Empty database created");
     }
 
     BufferedReader fr = new BufferedReader(new FileReader(filename));
-    String text = null;
+    String text;
 
     while ((text = fr.readLine()) != null) {
       String[] parse = text.split(separator, 2);
@@ -30,7 +33,7 @@ public class PasswordStore {
       passMap.put(user, parse[0]);
     }
 
-    dbWriter = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
+    dbWriter = new BufferedWriter(new FileWriter(file.getAbsoluteFile(), true));
   }
 
 
@@ -42,7 +45,7 @@ public class PasswordStore {
     dbWriter.write(pass + separator + name);
     dbWriter.newLine();
     dbWriter.flush();
-    //log it
+    log.info("User " + name + " added to database");
   }
 
 
@@ -54,10 +57,10 @@ public class PasswordStore {
 
   public boolean checkPassword(User user, String pass) {
     if (passMap.get(user).equals(pass)) {
-      //log it
+      log.fine("User " + user.getName() + " password check successful");
       return true;
     } else {
-      //log it
+      log.info("User " + user.getName() + " password check failed");
       return false;
     }
   }

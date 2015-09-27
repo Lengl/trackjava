@@ -5,10 +5,13 @@ import com.sun.istack.internal.NotNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AuthorisationClient {
   private final PasswordStore pStore;
   private final BufferedReader reader;
+  private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
 
   public AuthorisationClient(String passwordDatabasePath) throws IOException {
     pStore = new PasswordStore(passwordDatabasePath);
@@ -16,6 +19,7 @@ public class AuthorisationClient {
   }
 
   public void startAuthorizationCycle() {
+    log.info("Auth cycle started");
     while (true) {
       try {
         System.out.println("Do you want to create new user profile?");
@@ -38,11 +42,11 @@ public class AuthorisationClient {
           }
         }
       } catch (IOException ex) {
-        System.err.println("A trouble with I/O system occurred: " + ex.getMessage());
-        System.err.println("Please restart application");
+        log.log(Level.SEVERE, "IOException: ", ex);
         return;
       }
     }
+    log.info("Auth cycle ended");
   }
 
   private boolean answerIsYes() throws IOException {
@@ -70,6 +74,7 @@ public class AuthorisationClient {
       if (password.equals(passwordRetyped)) {
         pStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
+        log.info("User " + name + " created successfully");
         break;
       } else {
         System.out.println("Passwords didn't match! Try again.");
@@ -84,15 +89,17 @@ public class AuthorisationClient {
 
     User user = pStore.findUserByName(name);
     if (user != null) {
-      //3 attempts to type correct password
-      for (int i = 0; i < 3; i++) {
+      for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
         String pass = reader.readLine();
         if (pStore.checkPassword(user, pass)) {
           System.out.println("Authorized successfully");
+          log.fine("User " + name + "authorized successfully");
           break;
         } else {
-          System.out.println("Password incorrect. " + (2 - i) + " attempts left");
+          System.out.println("Password incorrect. " + (i - 1) + " attempts left");
+          if (i == 1)
+            log.info("User " + name + " run out of attempts");
         }
       }
     } else {
