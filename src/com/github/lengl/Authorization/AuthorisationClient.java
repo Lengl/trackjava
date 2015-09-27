@@ -1,28 +1,40 @@
 package com.github.lengl.Authorization;
 
 import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AuthorisationClient {
-  private static final List<User> userList = new ArrayList<>();
-  private static final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+  private final PasswordStore pStore;
+  private final BufferedReader reader;
 
-  public static void main(String[] args) {
+  public AuthorisationClient(/*String passwordDatabasePath*/) throws IOException {
+    pStore = new PasswordStore(/*passwordDatabasePath*/);
+    reader = new BufferedReader(new InputStreamReader(System.in));
+  }
+
+  public void startAuthorizationCycle() {
     while (true) {
       try {
         System.out.println("Authorization started.");
         System.out.println("Type your login:");
-        String name = br.readLine();
+        String name = reader.readLine();
 
-        User user = userFind(name);
+        User user = pStore.findUserByName(name);
         if (user != null) {
-          checkPassword(user);
+          //3 attempts to type correct password
+          for (int i = 0; i < 3; i++) {
+            System.out.println("Type your password:");
+            String pass = reader.readLine();
+            if (pStore.checkPassword(user, pass)) {
+              System.out.println("Authorized successfully");
+              break;
+            } else {
+              System.out.println("Password incorrect. " + (2 - i) + " attempts left");
+            }
+          }
         } else {
           System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
           if (answerIsYes()) {
@@ -41,32 +53,10 @@ public class AuthorisationClient {
     }
   }
 
-  private static void checkPassword(User user) throws IOException {
-    for (int i = 0; i < 3; i++) {
-      System.out.println("Type your password:");
-      String password = br.readLine();
-      if (user.passwordIs(password)) {
-        System.out.println("Authorized successfully!");
-        return;
-      } else {
-        System.out.println("Password didn't match! " + (2 - i) + " attempts left.");
-      }
-    }
-  }
-
-  @Nullable private static User userFind(@NotNull String name) {
-    for (User user : userList) {
-      if (user.nameIs(name)) {
-        return user;
-      }
-    }
-    return null;
-  }
-
-  private static boolean answerIsYes() throws IOException {
+  private boolean answerIsYes() throws IOException {
     String answer;
     while (true) {
-      answer = br.readLine();
+      answer = reader.readLine();
       switch (answer.toLowerCase()) {
         case "y":
           return true;
@@ -79,14 +69,14 @@ public class AuthorisationClient {
     }
   }
 
-  private static void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+  private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
     while (true) {
       System.out.println("Print your password:");
-      String password = br.readLine();
+      String password = reader.readLine();
       System.out.println("Confirm your password:");
-      String passwordRetyped = br.readLine();
+      String passwordRetyped = reader.readLine();
       if (password.equals(passwordRetyped)) {
-        userList.add(new User(name, password));
+        pStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
         break;
       } else {
