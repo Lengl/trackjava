@@ -71,9 +71,9 @@ public class AuthorisationClient {
   private void getPasswordAndCreateUser (@NotNull String name) throws IOException, NoSuchAlgorithmException {
     while (true) {
       System.out.println("Print your password:");
-      String password = reader.readLine();
+      String password = safePassRead();
       System.out.println("Confirm your password:");
-      String passwordRetyped = reader.readLine();
+      String passwordRetyped = safePassRead();
       if (password.equals(passwordRetyped)) {
         pStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
@@ -94,7 +94,7 @@ public class AuthorisationClient {
     if (user != null) {
       for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
-        String pass = reader.readLine();
+        String pass = safePassRead();
         if (pStore.checkPassword(user, pass)) {
           System.out.println("Authorized successfully");
           log.fine("User " + name + "authorized successfully");
@@ -110,6 +110,14 @@ public class AuthorisationClient {
       if (answerIsYes()) {
         getPasswordAndCreateUser(name);
       }
+    }
+  }
+
+  private String safePassRead() throws IOException{
+    if (System.console() != null) {
+      return new String(System.console().readPassword());
+    } else {
+      return reader.readLine();
     }
   }
 }
