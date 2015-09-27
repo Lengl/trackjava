@@ -5,6 +5,7 @@ import com.sun.istack.internal.NotNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +45,8 @@ public class AuthorisationClient {
       } catch (IOException ex) {
         log.log(Level.SEVERE, "IOException: ", ex);
         return;
+      } catch (NoSuchAlgorithmException ex) {
+        log.log(Level.SEVERE, "NoSuchAlgorithmException: ", ex);
       }
     }
     log.info("Auth cycle ended");
@@ -65,7 +68,7 @@ public class AuthorisationClient {
     }
   }
 
-  private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+  private void getPasswordAndCreateUser (@NotNull String name) throws IOException, NoSuchAlgorithmException {
     while (true) {
       System.out.println("Print your password:");
       String password = reader.readLine();
@@ -82,7 +85,7 @@ public class AuthorisationClient {
     }
   }
 
-  private void authorize() throws IOException {
+  private void authorize() throws IOException, NoSuchAlgorithmException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
     String name = reader.readLine();

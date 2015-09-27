@@ -4,6 +4,8 @@ import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -36,33 +38,42 @@ public class PasswordStore {
     dbWriter = new BufferedWriter(new FileWriter(file.getAbsoluteFile(), true));
   }
 
-
-
-  public void addPassword(String name, String pass) throws IOException {
+  public void addPassword(String name, String pass) throws IOException, NoSuchAlgorithmException {
     User user = new User(name);
-    passMap.put(user, pass);
+    String encodedPass = encode(pass);
+    passMap.put(user, encodedPass);
     userMap.put(name, user);
-    dbWriter.write(pass + separator + name);
+    dbWriter.write(encodedPass + separator + name);
     dbWriter.newLine();
     dbWriter.flush();
     log.info("User " + name + " added to database");
   }
 
-
-  @Nullable
-  public User findUserByName(@NotNull String name) {
-    return userMap.get(name);
-  }
-
-
-  public boolean checkPassword(User user, String pass) {
-    if (passMap.get(user).equals(pass)) {
+  public boolean checkPassword(User user, String pass) throws NoSuchAlgorithmException {
+    if (passMap.get(user).equals(encode(pass))) {
       log.fine("User " + user.getName() + " password check successful");
       return true;
     } else {
       log.info("User " + user.getName() + " password check failed");
       return false;
     }
+  }
+
+  private static String encode(String input) throws NoSuchAlgorithmException {
+    MessageDigest messageDigest = MessageDigest.getInstance("SHA1");
+    byte[] result = messageDigest.digest(input.getBytes());
+
+    //convert the byte to hex format
+    StringBuffer hexString = new StringBuffer();
+    for (int i = 0; i < result.length; i++) {
+      hexString.append(Integer.toHexString(0xFF & result[i]));
+    }
+    return hexString.toString();
+  }
+
+  @Nullable
+  public User findUserByName(@NotNull String name) {
+    return userMap.get(name);
   }
 
   @Override
