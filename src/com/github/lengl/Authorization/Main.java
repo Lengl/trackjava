@@ -6,10 +6,10 @@ public class Main {
 
   public static void main(String[] args) {
     try {
-      AuthorisationClient authorisationClient = new AuthorisationClient();
+      AuthorisationClient authorisationClient = new AuthorisationClient("passwordBase.mybase");
       authorisationClient.startAuthorizationCycle();
     } catch (IOException e) {
-      //log it
+      e.printStackTrace();
     }
   }
 }

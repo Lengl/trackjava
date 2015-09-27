@@ -10,40 +10,32 @@ public class AuthorisationClient {
   private final PasswordStore pStore;
   private final BufferedReader reader;
 
-  public AuthorisationClient(/*String passwordDatabasePath*/) throws IOException {
-    pStore = new PasswordStore(/*passwordDatabasePath*/);
+  public AuthorisationClient(String passwordDatabasePath) throws IOException {
+    pStore = new PasswordStore(passwordDatabasePath);
     reader = new BufferedReader(new InputStreamReader(System.in));
   }
 
   public void startAuthorizationCycle() {
     while (true) {
       try {
-        System.out.println("Authorization started.");
-        System.out.println("Type your login:");
-        String name = reader.readLine();
-
-        User user = pStore.findUserByName(name);
-        if (user != null) {
-          //3 attempts to type correct password
-          for (int i = 0; i < 3; i++) {
-            System.out.println("Type your password:");
-            String pass = reader.readLine();
-            if (pStore.checkPassword(user, pass)) {
-              System.out.println("Authorized successfully");
+        System.out.println("Do you want to create new user profile?");
+        if (answerIsYes()) {
+          while (true) {
+            System.out.println("Type your login:");
+            String name = reader.readLine();
+            if (pStore.findUserByName(name) == null) {
+              getPasswordAndCreateUser(name);
               break;
             } else {
-              System.out.println("Password incorrect. " + (2 - i) + " attempts left");
+              System.out.println("This user already exist. Try again.");
             }
           }
         } else {
-          System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
+          authorize();
+          System.out.println("Exit the program? (type \"y\" or \"n\")");
           if (answerIsYes()) {
-            getPasswordAndCreateUser(name);
+            break;
           }
-        }
-        System.out.println("Exit the program? (type \"y\" or \"n\")");
-        if (answerIsYes()) {
-          break;
         }
       } catch (IOException ex) {
         System.err.println("A trouble with I/O system occurred: " + ex.getMessage());
@@ -81,6 +73,32 @@ public class AuthorisationClient {
         break;
       } else {
         System.out.println("Passwords didn't match! Try again.");
+      }
+    }
+  }
+
+  private void authorize() throws IOException {
+    System.out.println("Authorization started.");
+    System.out.println("Type your login:");
+    String name = reader.readLine();
+
+    User user = pStore.findUserByName(name);
+    if (user != null) {
+      //3 attempts to type correct password
+      for (int i = 0; i < 3; i++) {
+        System.out.println("Type your password:");
+        String pass = reader.readLine();
+        if (pStore.checkPassword(user, pass)) {
+          System.out.println("Authorized successfully");
+          break;
+        } else {
+          System.out.println("Password incorrect. " + (2 - i) + " attempts left");
+        }
+      }
+    } else {
+      System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
+      if (answerIsYes()) {
+        getPasswordAndCreateUser(name);
       }
     }
   }

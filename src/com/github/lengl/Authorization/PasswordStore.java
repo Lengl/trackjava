@@ -11,24 +11,37 @@ public class PasswordStore {
   private Map<User, String> passMap = new HashMap<User, String>();
   private Map<String, User> userMap = new HashMap<String, User>();
   private BufferedWriter dbWriter;
+  private static final String separator = new String(";");
 
-  public PasswordStore(/*String filename*/) throws IOException {
-    /*BufferedReader fr = new BufferedReader(new FileReader(filename));
+  public PasswordStore(String filename) throws IOException {
+    File file = new File(filename);
+    if(!file.exists()) {
+      file.createNewFile();
+    }
+
+    BufferedReader fr = new BufferedReader(new FileReader(filename));
     String text = null;
 
     while ((text = fr.readLine()) != null) {
-      //result = parseText
-      //userList.put(result);
+      String[] parse = text.split(separator, 2);
+      //first part is user password, other is it's name
+      User user = new User(parse[1]);
+      userMap.put(parse[1], user);
+      passMap.put(user, parse[0]);
     }
 
-    dbWriter = new BufferedWriter(new FileWriter(filename, true));*/
+    dbWriter = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
   }
+
+
 
   public void addPassword(String name, String pass) throws IOException {
     User user = new User(name);
     passMap.put(user, pass);
     userMap.put(name, user);
-    //dbWriter.write(pass);
+    dbWriter.write(pass + separator + name);
+    dbWriter.newLine();
+    dbWriter.flush();
     //log it
   }
 
@@ -47,5 +60,11 @@ public class PasswordStore {
       //log it
       return false;
     }
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    dbWriter.close();
+    super.finalize();
   }
 }
