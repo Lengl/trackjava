@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public class PasswordStore {
   private Map<User, String> passMap = new HashMap<User, String>();
   private Map<String, User> userMap = new HashMap<String, User>();
-  private BufferedWriter dbWriter;
+  private BufferedWriter storeWriter;
   private static final String SEPARATOR = ";";
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
 
@@ -27,7 +27,7 @@ public class PasswordStore {
     Path path = FileSystems.getDefault().getPath(filename);
     if(Files.notExists(path)) {
       Files.createFile(path);
-      log.info("Empty database created");
+      log.info("Empty store created");
     }
 
     BufferedReader fr = Files.newBufferedReader(path);
@@ -41,7 +41,7 @@ public class PasswordStore {
       passMap.put(user, parse[0]);
     }
 
-    dbWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
+    storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
   public void addPassword(String name, String pass) throws IOException, NoSuchAlgorithmException {
@@ -49,10 +49,10 @@ public class PasswordStore {
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
     userMap.put(name, user);
-    dbWriter.write(encodedPass + SEPARATOR + name);
-    dbWriter.newLine();
-    dbWriter.flush();
-    log.info("User " + name + " added to database");
+    storeWriter.write(encodedPass + SEPARATOR + name);
+    storeWriter.newLine();
+    storeWriter.flush();
+    log.info("User " + name + " added to store");
   }
 
   public boolean checkPassword(User user, String pass) throws NoSuchAlgorithmException {
@@ -84,7 +84,7 @@ public class PasswordStore {
 
   @Override
   protected void finalize() throws Throwable {
-    dbWriter.close();
+    storeWriter.close();
     super.finalize();
   }
 }
