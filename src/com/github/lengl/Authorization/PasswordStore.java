@@ -5,10 +5,11 @@ import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -23,13 +24,13 @@ public class PasswordStore {
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
 
   public PasswordStore(String filename) throws IOException {
-    File file = new File(filename);
-    if(!file.exists()) {
-      file.createNewFile();
+    Path path = FileSystems.getDefault().getPath(filename);
+    if(Files.notExists(path)) {
+      Files.createFile(path);
       log.info("Empty database created");
     }
 
-    BufferedReader fr = new BufferedReader(new FileReader(filename));
+    BufferedReader fr = Files.newBufferedReader(path);
     String text;
 
     while ((text = fr.readLine()) != null) {
@@ -40,7 +41,7 @@ public class PasswordStore {
       passMap.put(user, parse[0]);
     }
 
-    dbWriter = new BufferedWriter(new FileWriter(file.getAbsoluteFile(), true));
+    dbWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
   public void addPassword(String name, String pass) throws IOException, NoSuchAlgorithmException {
