@@ -1,6 +1,7 @@
 package com.github.lengl.Authorization;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -18,8 +19,11 @@ public class Main {
     try {
       AuthorisationClient authorisationClient = new AuthorisationClient("passwordBase.mybase");
       authorisationClient.startAuthorizationCycle();
+      authorisationClient.stopAuthorizationClient();
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
+    } catch (NoSuchAlgorithmException ex) {
+      log.log(Level.SEVERE, "NoSuchAlgorithmException: ", ex);
     }
   }
 }

@@ -10,12 +10,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AuthorisationClient {
-  private final PasswordStore pStore;
+  private final PasswordStore passwordStore;
   private final BufferedReader reader;
   private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
 
-  public AuthorisationClient(String passwordDatabasePath) throws IOException {
-    pStore = new PasswordStore(passwordDatabasePath);
+  public AuthorisationClient(String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
+    passwordStore = new PasswordStore(passwordDatabasePath);
     reader = new BufferedReader(new InputStreamReader(System.in));
   }
 
@@ -28,7 +28,7 @@ public class AuthorisationClient {
           while (true) {
             System.out.println("Type your login:");
             String name = reader.readLine();
-            if (pStore.findUserByName(name) == null) {
+            if (passwordStore.findUserByName(name) == null) {
               getPasswordAndCreateUser(name);
               break;
             } else {
@@ -45,14 +45,16 @@ public class AuthorisationClient {
       } catch (IOException ex) {
         log.log(Level.SEVERE, "IOException: ", ex);
         return;
-      } catch (NoSuchAlgorithmException ex) {
-        log.log(Level.SEVERE, "NoSuchAlgorithmException: ", ex);
       }
     }
     log.info("Auth cycle ended");
   }
 
   private boolean answerIsYes() throws IOException {
+    return reader.readLine().toLowerCase().equals("y");
+  }
+
+  private boolean tryToGetYesOrNoAnswer() throws IOException {
     String answer;
     while (true) {
       answer = reader.readLine();
@@ -68,14 +70,14 @@ public class AuthorisationClient {
     }
   }
 
-  private void getPasswordAndCreateUser (@NotNull String name) throws IOException, NoSuchAlgorithmException {
+  private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
     while (true) {
       System.out.println("Print your password:");
       String password = safePassRead();
       System.out.println("Confirm your password:");
       String passwordRetyped = safePassRead();
       if (password.equals(passwordRetyped)) {
-        pStore.addPassword(name, password);
+        passwordStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
         log.info("User " + name + " created successfully");
         break;
@@ -85,17 +87,17 @@ public class AuthorisationClient {
     }
   }
 
-  private void authorize() throws IOException, NoSuchAlgorithmException {
+  private void authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
     String name = reader.readLine();
 
-    User user = pStore.findUserByName(name);
+    User user = passwordStore.findUserByName(name);
     if (user != null) {
       for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
         String pass = safePassRead();
-        if (pStore.checkPassword(user, pass)) {
+        if (passwordStore.checkPassword(user, pass)) {
           System.out.println("Authorized successfully");
           log.fine("User " + name + "authorized successfully");
           break;
@@ -119,5 +121,10 @@ public class AuthorisationClient {
     } else {
       return reader.readLine();
     }
+  }
+
+  public void stopAuthorizationClient() throws IOException {
+    passwordStore.stopPasswordStore();
+    reader.close();
   }
 }

@@ -22,8 +22,9 @@ public class PasswordStore {
   private BufferedWriter storeWriter;
   private static final String SEPARATOR = ";";
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
+  private static MessageDigest messageDigest;
 
-  public PasswordStore(String filename) throws IOException {
+  public PasswordStore(String filename) throws IOException, NoSuchAlgorithmException {
     Path path = FileSystems.getDefault().getPath(filename);
     if(Files.notExists(path)) {
       Files.createFile(path);
@@ -40,11 +41,13 @@ public class PasswordStore {
       userMap.put(parse[1], user);
       passMap.put(user, parse[0]);
     }
+    fr.close();
 
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
+    messageDigest = MessageDigest.getInstance("SHA1");
   }
 
-  public void addPassword(String name, String pass) throws IOException, NoSuchAlgorithmException {
+  public void addPassword(String name, String pass) throws IOException {
     User user = new User(name);
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
@@ -55,7 +58,7 @@ public class PasswordStore {
     log.info("User " + name + " added to store");
   }
 
-  public boolean checkPassword(User user, String pass) throws NoSuchAlgorithmException {
+  public boolean checkPassword(User user, String pass) {
     if (passMap.get(user).equals(encode(pass))) {
       log.fine("User " + user.getName() + " password check successful");
       return true;
@@ -65,8 +68,7 @@ public class PasswordStore {
     }
   }
 
-  private static String encode(String input) throws NoSuchAlgorithmException {
-    MessageDigest messageDigest = MessageDigest.getInstance("SHA1");
+  private static String encode(String input) {
     byte[] result = messageDigest.digest(input.getBytes());
 
     //convert the byte to hex format
@@ -82,9 +84,7 @@ public class PasswordStore {
     return userMap.get(name);
   }
 
-  @Override
-  protected void finalize() throws Throwable {
+  public void stopPasswordStore() throws IOException {
     storeWriter.close();
-    super.finalize();
   }
 }
