@@ -51,7 +51,8 @@ public class AuthorisationClient {
   }
 
   private boolean answerIsYes() throws IOException {
-    return reader.readLine().toLowerCase().equals("y");
+    String answer = reader.readLine().toLowerCase();
+    return "y".equals(answer) || "yes".equals(answer);
   }
 
   private boolean tryToGetYesOrNoAnswer() throws IOException {
