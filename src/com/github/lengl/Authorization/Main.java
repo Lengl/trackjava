@@ -16,14 +16,18 @@ public class Main {
     } catch (IOException e) {
       System.err.println("Could not setup logger configuration: " + e.toString());
     }
+    AuthorisationClient authorisationClient = null;
     try {
-      AuthorisationClient authorisationClient = new AuthorisationClient("passwordBase.mybase");
+      authorisationClient = new AuthorisationClient("passwordStore.mystore");
       authorisationClient.startAuthorizationCycle();
-      authorisationClient.stopAuthorizationClient();
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     } catch (NoSuchAlgorithmException ex) {
       log.log(Level.SEVERE, "NoSuchAlgorithmException: ", ex);
+    } finally {
+      if(authorisationClient != null) {
+        authorisationClient.stopAuthorizationClient();
+      }
     }
   }
 }

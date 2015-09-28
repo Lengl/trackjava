@@ -2,7 +2,7 @@
 application_log.txt*
 
 #ignore my database
-passwordBase.mybase
+passwordStore.mystore
 
 # Windows image file caches
 *.db

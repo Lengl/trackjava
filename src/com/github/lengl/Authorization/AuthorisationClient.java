@@ -124,8 +124,14 @@ public class AuthorisationClient {
     }
   }
 
-  public void stopAuthorizationClient() throws IOException {
-    passwordStore.stopPasswordStore();
-    reader.close();
+  public void stopAuthorizationClient(){
+    //there is no check if passwordStore != null or reader != null because constructor throws exception
+    //if they were not created
+    passwordStore.closePasswordStore();
+    try {
+      reader.close();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IOException: ", e);
+    }
   }
 }

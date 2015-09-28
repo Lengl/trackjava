@@ -14,12 +14,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PasswordStore {
-  private Map<User, String> passMap = new HashMap<User, String>();
-  private Map<String, User> userMap = new HashMap<String, User>();
-  private BufferedWriter storeWriter;
+  private final Map<User, String> passMap = new HashMap<User, String>();
+  private final Map<String, User> userMap = new HashMap<String, User>();
+  private final BufferedWriter storeWriter;
   private static final String SEPARATOR = ";";
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
   private static MessageDigest messageDigest;
@@ -54,7 +55,6 @@ public class PasswordStore {
     userMap.put(name, user);
     storeWriter.write(encodedPass + SEPARATOR + name);
     storeWriter.newLine();
-    storeWriter.flush();
     log.info("User " + name + " added to store");
   }
 
@@ -84,7 +84,13 @@ public class PasswordStore {
     return userMap.get(name);
   }
 
-  public void stopPasswordStore() throws IOException {
-    storeWriter.close();
+  public void closePasswordStore() {
+    try {
+      //there is no check if storeWriter != null because constructor throws exception
+      //if they were not created
+      storeWriter.close();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IOException: ", e);
+    }
   }
 }
