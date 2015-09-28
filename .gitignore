@@ -5,8 +5,7 @@ application_log.txt*
 passwordBase.mybase
 
 # Windows image file caches
-Thumbs.db
-ehthumbs.db
+*.db
 
 # Folder config file
 Desktop.ini
