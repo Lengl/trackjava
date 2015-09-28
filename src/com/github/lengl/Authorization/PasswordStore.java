@@ -3,7 +3,12 @@ package com.github.lengl.Authorization;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -14,7 +19,7 @@ public class PasswordStore {
   private Map<User, String> passMap = new HashMap<User, String>();
   private Map<String, User> userMap = new HashMap<String, User>();
   private BufferedWriter dbWriter;
-  private static final String separator = new String(";");
+  private static final String SEPARATOR = ";";
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
 
   public PasswordStore(String filename) throws IOException {
@@ -28,7 +33,7 @@ public class PasswordStore {
     String text;
 
     while ((text = fr.readLine()) != null) {
-      String[] parse = text.split(separator, 2);
+      String[] parse = text.split(SEPARATOR, 2);
       //first part is user password, other is it's name
       User user = new User(parse[1]);
       userMap.put(parse[1], user);
@@ -43,7 +48,7 @@ public class PasswordStore {
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
     userMap.put(name, user);
-    dbWriter.write(encodedPass + separator + name);
+    dbWriter.write(encodedPass + SEPARATOR + name);
     dbWriter.newLine();
     dbWriter.flush();
     log.info("User " + name + " added to database");

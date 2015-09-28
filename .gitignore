@@ -1,3 +1,9 @@
+# Ignore my log files
+application_log.txt*
+
+#ignore my database
+passwordBase.mybase
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
