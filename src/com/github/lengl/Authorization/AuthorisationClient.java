@@ -10,9 +10,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AuthorisationClient {
+  private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
+
   private final PasswordStore passwordStore;
   private final BufferedReader reader;
-  private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
 
   public AuthorisationClient(String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
     passwordStore = new PasswordStore(passwordDatabasePath);
@@ -21,13 +22,16 @@ public class AuthorisationClient {
 
   public void startAuthorizationCycle() {
     log.info("Auth cycle started");
+    //infinite loop1
     while (true) {
       try {
         System.out.println("Do you want to create new user profile?");
         if (answerIsYes()) {
+          //infinite loop2
           while (true) {
             System.out.println("Type your login:");
             String name = reader.readLine();
+            //loop2 break condition
             if (passwordStore.findUserByName(name) == null) {
               getPasswordAndCreateUser(name);
               break;
@@ -38,6 +42,7 @@ public class AuthorisationClient {
         } else {
           authorize();
           System.out.println("Exit the program? (type \"y\" or \"n\")");
+          //loop1 break condition
           if (answerIsYes()) {
             break;
           }
@@ -50,6 +55,7 @@ public class AuthorisationClient {
     log.info("Auth cycle ended");
   }
 
+  //returns true if user typed "y" or "yes" and false otherwise
   private boolean answerIsYes() throws IOException {
     String answer = reader.readLine().toLowerCase();
     return "y".equals(answer) || "yes".equals(answer);
@@ -71,12 +77,15 @@ public class AuthorisationClient {
     }
   }
 
+  //ask user to type his password twice, compare them, create user and add his password to store
   private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+    //infinite loop
     while (true) {
       System.out.println("Print your password:");
       String password = safePassRead();
       System.out.println("Confirm your password:");
       String passwordRetyped = safePassRead();
+      //loop break condition
       if (password.equals(passwordRetyped)) {
         passwordStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
@@ -88,6 +97,7 @@ public class AuthorisationClient {
     }
   }
 
+  //ask user login, give user 3 attempts to type correct password.
   private void authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
@@ -116,6 +126,7 @@ public class AuthorisationClient {
     }
   }
 
+  //if there is a console - tries to readPassword (without echoing), otherwise read normally
   private String safePassRead() throws IOException{
     if (System.console() != null) {
       return new String(System.console().readPassword());
@@ -124,6 +135,7 @@ public class AuthorisationClient {
     }
   }
 
+  //free our resources
   public void stopAuthorizationClient(){
     //there is no check if passwordStore != null or reader != null because constructor throws exception
     //if they were not created

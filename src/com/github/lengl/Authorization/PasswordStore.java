@@ -18,12 +18,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PasswordStore {
-  private final Map<User, String> passMap = new HashMap<User, String>();
-  private final Map<String, User> userMap = new HashMap<String, User>();
-  private final BufferedWriter storeWriter;
   private static final String SEPARATOR = ";";
   private static Logger log = Logger.getLogger(PasswordStore.class.getName());
   private static MessageDigest messageDigest;
+
+  private final Map<User, String> passMap = new HashMap<User, String>();
+  private final Map<String, User> userMap = new HashMap<String, User>();
+  private final BufferedWriter storeWriter;
 
   public PasswordStore(String filename) throws IOException, NoSuchAlgorithmException {
     Path path = FileSystems.getDefault().getPath(filename);
