@@ -55,6 +55,7 @@ public class PasswordStore {
     userMap.put(name, user);
     storeWriter.write(encodedPass + SEPARATOR + name);
     storeWriter.newLine();
+    //storeWriter.flush();
     log.info("User " + name + " added to store");
   }
 
@@ -73,8 +74,8 @@ public class PasswordStore {
 
     //convert the byte to hex format
     StringBuffer hexString = new StringBuffer();
-    for (int i = 0; i < result.length; i++) {
-      hexString.append(Integer.toHexString(0xFF & result[i]));
+    for (byte resultByte : result) {
+      hexString.append(Integer.toHexString(0xFF & resultByte));
     }
     return hexString.toString();
   }
