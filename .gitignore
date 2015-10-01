@@ -1,6 +1,11 @@
+# Ignore my log files
+application_log.txt*
+
+#ignore my database
+passwordStore.mystore
+
 # Windows image file caches
-Thumbs.db
-ehthumbs.db
+*.db
 
 # Folder config file
 Desktop.ini

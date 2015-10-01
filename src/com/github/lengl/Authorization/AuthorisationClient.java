@@ -1,72 +1,70 @@
 package com.github.lengl.Authorization;
 
 import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.security.NoSuchAlgorithmException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AuthorisationClient {
-  private static final List<User> userList = new ArrayList<>();
-  private static final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+  private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
 
-  public static void main(String[] args) {
+  private final PasswordStore passwordStore;
+  private final BufferedReader reader;
+
+  public AuthorisationClient(String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
+    passwordStore = new PasswordStore(passwordDatabasePath);
+    reader = new BufferedReader(new InputStreamReader(System.in));
+  }
+
+  public void startAuthorizationCycle() {
+    log.info("Auth cycle started");
+    //infinite loop1
     while (true) {
       try {
-        System.out.println("Authorization started.");
-        System.out.println("Type your login:");
-        String name = br.readLine();
-
-        User user = userFind(name);
-        if (user != null) {
-          checkPassword(user);
+        System.out.println("Do you want to create new user profile?");
+        if (answerIsYes()) {
+          //infinite loop2
+          while (true) {
+            System.out.println("Type your login:");
+            String name = reader.readLine();
+            //loop2 break condition
+            if (passwordStore.findUserByName(name) == null) {
+              getPasswordAndCreateUser(name);
+              break;
+            } else {
+              System.out.println("This user already exist. Try again.");
+            }
+          }
         } else {
-          System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
+          authorize();
+          System.out.println("Exit the program? (type \"y\" or \"n\")");
+          //loop1 break condition
           if (answerIsYes()) {
-            getPasswordAndCreateUser(name);
+            break;
           }
         }
-        System.out.println("Exit the program? (type \"y\" or \"n\")");
-        if (answerIsYes()) {
-          break;
-        }
       } catch (IOException ex) {
-        System.err.println("A trouble with I/O system occurred: " + ex.getMessage());
-        System.err.println("Please restart application");
+        log.log(Level.SEVERE, "IOException: ", ex);
         return;
       }
     }
+    log.info("Auth cycle ended");
   }
 
-  private static void checkPassword(User user) throws IOException {
-    for (int i = 0; i < 3; i++) {
-      System.out.println("Type your password:");
-      String password = br.readLine();
-      if (user.passwordIs(password)) {
-        System.out.println("Authorized successfully!");
-        return;
-      } else {
-        System.out.println("Password didn't match! " + (2 - i) + " attempts left.");
-      }
-    }
+  //returns true if user typed "y" or "yes" and false otherwise
+  private boolean answerIsYes() throws IOException {
+    String answer = reader.readLine().toLowerCase();
+    return "y".equals(answer) || "yes".equals(answer);
   }
 
-  @Nullable private static User userFind(@NotNull String name) {
-    for (User user : userList) {
-      if (user.nameIs(name)) {
-        return user;
-      }
-    }
-    return null;
-  }
-
-  private static boolean answerIsYes() throws IOException {
+  private boolean tryToGetYesOrNoAnswer() throws IOException {
     String answer;
     while (true) {
-      answer = br.readLine();
+      answer = reader.readLine();
       switch (answer.toLowerCase()) {
         case "y":
           return true;
@@ -79,19 +77,73 @@ public class AuthorisationClient {
     }
   }
 
-  private static void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+  //ask user to type his password twice, compare them, create user and add his password to store
+  private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+    //infinite loop
     while (true) {
       System.out.println("Print your password:");
-      String password = br.readLine();
+      String password = safePassRead();
       System.out.println("Confirm your password:");
-      String passwordRetyped = br.readLine();
+      String passwordRetyped = safePassRead();
+      //loop break condition
       if (password.equals(passwordRetyped)) {
-        userList.add(new User(name, password));
+        passwordStore.addPassword(name, password);
         System.out.println("User created successfully. Now you can authorize with your login and password.");
+        log.info("User " + name + " created successfully");
         break;
       } else {
         System.out.println("Passwords didn't match! Try again.");
       }
+    }
+  }
+
+  //ask user login, give user 3 attempts to type correct password.
+  private void authorize() throws IOException {
+    System.out.println("Authorization started.");
+    System.out.println("Type your login:");
+    String name = reader.readLine();
+
+    User user = passwordStore.findUserByName(name);
+    if (user != null) {
+      for (int i = 3; i > 0; i--) {
+        System.out.println("Type your password:");
+        String pass = safePassRead();
+        if (passwordStore.checkPassword(user, pass)) {
+          System.out.println("Authorized successfully");
+          log.fine("User " + name + "authorized successfully");
+          break;
+        } else {
+          System.out.println("Password incorrect. " + (i - 1) + " attempts left");
+          if (i == 1)
+            log.info("User " + name + " run out of attempts");
+        }
+      }
+    } else {
+      System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
+      if (answerIsYes()) {
+        getPasswordAndCreateUser(name);
+      }
+    }
+  }
+
+  //if there is a console - tries to readPassword (without echoing), otherwise read normally
+  private String safePassRead() throws IOException{
+    if (System.console() != null) {
+      return new String(System.console().readPassword());
+    } else {
+      return reader.readLine();
+    }
+  }
+
+  //free our resources
+  public void stopAuthorizationClient(){
+    //there is no check if passwordStore != null or reader != null because constructor throws exception
+    //if they were not created
+    passwordStore.closePasswordStore();
+    try {
+      reader.close();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IOException: ", e);
     }
   }
 }
