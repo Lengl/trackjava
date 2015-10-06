@@ -1,5 +1,7 @@
 package com.github.lengl.Authorization;
 
+import com.sun.istack.internal.NotNull;
+
 public class User {
   private final String name;
 
@@ -7,6 +9,7 @@ public class User {
     this.name = name;
   }
 
+  @NotNull
   public String getName() {
     return name;
   }

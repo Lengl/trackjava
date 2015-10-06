@@ -25,7 +25,7 @@ public class Main {
     } catch (NoSuchAlgorithmException ex) {
       log.log(Level.SEVERE, "NoSuchAlgorithmException: ", ex);
     } finally {
-      if(authorisationClient != null) {
+      if (authorisationClient != null) {
         authorisationClient.stopAuthorizationClient();
       }
     }

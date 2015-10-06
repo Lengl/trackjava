@@ -10,8 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AuthorisationClient {
-  private static Logger log = Logger.getLogger(AuthorisationClient.class.getName());
-
+  private final Logger log = Logger.getLogger(AuthorisationClient.class.getName());
   private final PasswordStore passwordStore;
   private final BufferedReader reader;
 
@@ -56,11 +55,13 @@ public class AuthorisationClient {
   }
 
   //returns true if user typed "y" or "yes" and false otherwise
+  @NotNull
   private boolean answerIsYes() throws IOException {
     String answer = reader.readLine().toLowerCase();
     return "y".equals(answer) || "yes".equals(answer);
   }
 
+  @NotNull
   private boolean tryToGetYesOrNoAnswer() throws IOException {
     String answer;
     while (true) {
@@ -78,7 +79,7 @@ public class AuthorisationClient {
   }
 
   //ask user to type his password twice, compare them, create user and add his password to store
-  private void getPasswordAndCreateUser (@NotNull String name) throws IOException {
+  private void getPasswordAndCreateUser(@NotNull String name) throws IOException {
     //infinite loop
     while (true) {
       System.out.println("Print your password:");
@@ -127,7 +128,8 @@ public class AuthorisationClient {
   }
 
   //if there is a console - tries to readPassword (without echoing), otherwise read normally
-  private String safePassRead() throws IOException{
+  @NotNull
+  private String safePassRead() throws IOException {
     if (System.console() != null) {
       return new String(System.console().readPassword());
     } else {
@@ -136,7 +138,7 @@ public class AuthorisationClient {
   }
 
   //free our resources
-  public void stopAuthorizationClient(){
+  public void stopAuthorizationClient() {
     //there is no check if passwordStore != null or reader != null because constructor throws exception
     //if they were not created
     passwordStore.closePasswordStore();
