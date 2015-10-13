@@ -19,11 +19,13 @@ public class MessageService {
   public MessageService(User user) {
     bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     historyStorage = new MessageStorage(user);
+    nickname = user.getName();
   }
 
   public void run() {
     log.info("User " + historyStorage.getParent().getName() + " started chat session");
     try {
+      //message reading loop
       while (react(bufferedReader.readLine()));
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
@@ -32,37 +34,50 @@ public class MessageService {
   }
 
   private boolean react(String input) {
-    historyStorage.addMessage(input);
-    input.trim();
-    if(input.startsWith("\\")) {
+    String trimmed = input.trim();
+    if(trimmed.startsWith("\\")) {
       //print help message
-      if ("\\help".equals(input)) {
+      if ("\\help".equals(trimmed)) {
         System.out.println("\\help\n\\user <nickname>\n\\history <amount>\n\\quit");
+        return true;
       }
 
-      if (input.startsWith("\\user ")) {
+      //change user nickname
+      if (trimmed.startsWith("\\user")) {
         //TODO: There should probably be a better way then this one. I need some ideas
-        nickname = input.substring(6).trim();
+        //TODO: Should I check for empty nickname?.
+        //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
+        nickname = trimmed.substring(5).trim();
+        return true;
       }
 
-      if (input.startsWith("\\history")) {
+      //print user's message history
+      if (trimmed.startsWith("\\history")) {
         try {
           //TODO: There should probably be a better way then this one. I need some ideas
-          if(input.equals("\\history")) {
+          if(trimmed.equals("\\history")) {
             historyStorage.printHistory(0);
           } else {
-            historyStorage.printHistory(Integer.parseInt(input.substring(9).trim()));
+            try {
+              historyStorage.printHistory(Integer.parseInt(trimmed.substring(8).trim()));
+            } catch (NumberFormatException ex) {
+              log.info("Wrong input parameter caught");
+              System.out.println("Usage: \\history <quantity> or \\history");
+            }
           }
         } catch (IOException e) {
           log.log(Level.SEVERE, "IOException: ", e);
           System.out.println("Usage: \\history <quantity> or \\history");
         }
+        return true;
       }
 
-      if ("\\quit".equals(input)) {
+      //finish sending messages
+      if ("\\quit".equals(trimmed)) {
         return false;
       }
     }
+    historyStorage.addMessage(input);
     return true;
   }
 
