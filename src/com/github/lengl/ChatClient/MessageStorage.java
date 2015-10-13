@@ -33,16 +33,14 @@ public class MessageStorage {
 
   void printHistory (int size) throws IOException {
     int mySize = size;
-    if (size > 0) {
-      if (size == 0 || size > messageHistory.size())
-        mySize = messageHistory.size();
-      ListIterator iter = messageHistory.listIterator(messageHistory.size() - mySize);
-      while (iter.hasNext()) {
-        messageWriter.write((String)iter.next());
-        messageWriter.newLine();
-      }
-      messageWriter.flush();
+    if (size <= 0 || size > messageHistory.size())
+      mySize = messageHistory.size();
+    ListIterator msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
+    while (msgHistoryIterator.hasNext()) {
+      messageWriter.write((String)msgHistoryIterator.next());
+      messageWriter.newLine();
     }
+    messageWriter.flush();
   }
 
   void closeStorage() {
