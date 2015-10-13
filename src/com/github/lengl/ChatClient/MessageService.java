@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class MessageService {
 
@@ -68,6 +70,21 @@ public class MessageService {
         } catch (IOException e) {
           log.log(Level.SEVERE, "IOException: ", e);
           System.out.println("Usage: \\history <quantity> or \\history");
+        }
+        return true;
+      }
+
+      //find messages matching regex
+      if (trimmed.startsWith("\\find")) {
+        try {
+          String regex = trimmed.substring(5).trim();
+          Pattern.compile(regex);
+          historyStorage.findInHistory(regex);
+        } catch (PatternSyntaxException e){
+          System.out.println("Invalid regular expression");
+        } catch (IOException e) {
+          log.log(Level.SEVERE, "IOException: ", e);
+          System.out.println("Usage: \\find <regular expression>");
         }
         return true;
       }

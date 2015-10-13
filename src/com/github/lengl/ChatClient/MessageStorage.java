@@ -27,11 +27,11 @@ public class MessageStorage {
     return parent;
   }
 
-  void addMessage(String message) {
+  public void addMessage(String message) {
     messageHistory.add(message);
   }
 
-  void printHistory (int size) throws IOException {
+  public void printHistory (int size) throws IOException {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
@@ -43,11 +43,29 @@ public class MessageStorage {
     messageWriter.flush();
   }
 
-  void closeStorage() {
+  public void closeStorage() {
     try {
       messageWriter.close();
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
+  }
+
+  public void findInHistory (String regex) throws IOException {
+    boolean empty = true;
+    ListIterator msgHistoryIterator = messageHistory.listIterator(0);
+    while (msgHistoryIterator.hasNext()) {
+      String tmp = (String)msgHistoryIterator.next();
+      if (tmp.matches(regex)) {
+        empty = false;
+        messageWriter.write(tmp);
+        messageWriter.newLine();
+      }
+    }
+    if (empty) {
+      messageWriter.write("No matches");
+      messageWriter.newLine();
+    }
+    messageWriter.flush();
   }
 }
