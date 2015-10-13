@@ -1,6 +1,8 @@
 package com.github.lengl.Authorization;
 
+import com.github.lengl.ChatClient.MessageService;
 import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,6 +15,8 @@ public class AuthorisationClient {
   private final Logger log = Logger.getLogger(AuthorisationClient.class.getName());
   private final PasswordStore passwordStore;
   private final BufferedReader reader;
+
+  private MessageService messageService = null;
 
   public AuthorisationClient(String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
     passwordStore = new PasswordStore(passwordDatabasePath);
@@ -39,8 +43,13 @@ public class AuthorisationClient {
             }
           }
         } else {
-          authorize();
-          System.out.println("Exit the program? (type \"y\" or \"n\")");
+          User user = authorize();
+          if(user != null) {
+            //TODO: probably need "Client" class which would start both auth cycle and message service afterwards.
+            messageService = new MessageService(user);
+            messageService.run();
+          }
+          System.out.println("Exit the program? (type \"y\" or \"yes\" to exit; type anything else to start authorization again)");
           //loop1 break condition
           if (answerIsYes()) {
             break;
@@ -99,7 +108,8 @@ public class AuthorisationClient {
   }
 
   //ask user login, give user 3 attempts to type correct password.
-  private void authorize() throws IOException {
+  @Nullable
+  private User authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
     String name = reader.readLine();
@@ -112,11 +122,12 @@ public class AuthorisationClient {
         if (passwordStore.checkPassword(user, pass)) {
           System.out.println("Authorized successfully");
           log.fine("User " + name + "authorized successfully");
-          break;
+          return user;
         } else {
           System.out.println("Password incorrect. " + (i - 1) + " attempts left");
-          if (i == 1)
+          if (i == 1) {
             log.info("User " + name + " run out of attempts");
+          }
         }
       }
     } else {
@@ -125,6 +136,7 @@ public class AuthorisationClient {
         getPasswordAndCreateUser(name);
       }
     }
+    return null;
   }
 
   //if there is a console - tries to readPassword (without echoing), otherwise read normally
@@ -147,5 +159,7 @@ public class AuthorisationClient {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
+    if(messageService != null)
+      messageService.stopMessageService();
   }
 }
