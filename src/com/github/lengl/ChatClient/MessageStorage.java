@@ -16,28 +16,28 @@ public class MessageStorage {
   private final List<String> messageHistory = new ArrayList<>();
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
   private final BufferedWriter messageWriter;
-  private final User parent;
+  private final User owner;
 
   public MessageStorage(User user) {
-    parent = user;
+    owner = user;
     messageWriter = new BufferedWriter(new OutputStreamWriter(System.out));
   }
 
-  public User getParent() {
-    return parent;
+  public User getOwner() {
+    return owner;
   }
 
   public void addMessage(String message) {
     messageHistory.add(message);
   }
 
-  public void printHistory (int size) throws IOException {
+  public void printHistory(int size) throws IOException {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
     ListIterator msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
     while (msgHistoryIterator.hasNext()) {
-      messageWriter.write((String)msgHistoryIterator.next());
+      messageWriter.write((String) msgHistoryIterator.next());
       messageWriter.newLine();
     }
     messageWriter.flush();
@@ -51,11 +51,11 @@ public class MessageStorage {
     }
   }
 
-  public void findInHistory (String regex) throws IOException {
+  public void findInHistory(String regex) throws IOException {
     boolean empty = true;
     ListIterator msgHistoryIterator = messageHistory.listIterator(0);
     while (msgHistoryIterator.hasNext()) {
-      String tmp = (String)msgHistoryIterator.next();
+      String tmp = (String) msgHistoryIterator.next();
       if (tmp.matches(regex)) {
         empty = false;
         messageWriter.write(tmp);

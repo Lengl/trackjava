@@ -25,19 +25,19 @@ public class MessageService {
   }
 
   public void run() {
-    log.info("User " + historyStorage.getParent().getName() + " started chat session");
+    log.info("User " + historyStorage.getOwner().getName() + " started chat session");
     try {
       //message reading loop
-      while (react(bufferedReader.readLine()));
+      while (react(bufferedReader.readLine())) ;
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
-    log.info("User " + historyStorage.getParent().getName() + " ended chat session");
+    log.info("User " + historyStorage.getOwner().getName() + " ended chat session");
   }
 
   private boolean react(String input) {
     String trimmed = input.trim();
-    if(trimmed.startsWith("\\")) {
+    if (trimmed.startsWith("\\")) {
       //print help message
       if ("\\help".equals(trimmed)) {
         System.out.println("\\help\n\\user <nickname>\n\\history <amount>\n\\quit");
@@ -57,7 +57,7 @@ public class MessageService {
       if (trimmed.startsWith("\\history")) {
         try {
           //TODO: There should probably be a better way then this one. I need some ideas
-          if(trimmed.equals("\\history")) {
+          if (trimmed.equals("\\history")) {
             historyStorage.printHistory(0);
           } else {
             try {
@@ -80,7 +80,7 @@ public class MessageService {
           String regex = trimmed.substring(5).trim();
           Pattern.compile(regex);
           historyStorage.findInHistory(regex);
-        } catch (PatternSyntaxException e){
+        } catch (PatternSyntaxException e) {
           System.out.println("Invalid regular expression");
         } catch (IOException e) {
           log.log(Level.SEVERE, "IOException: ", e);

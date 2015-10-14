@@ -44,7 +44,7 @@ public class AuthorisationClient {
           }
         } else {
           User user = authorize();
-          if(user != null) {
+          if (user != null) {
             //TODO: probably need "Client" class which would start both auth cycle and message service afterwards.
             messageService = new MessageService(user);
             messageService.run();
@@ -159,7 +159,7 @@ public class AuthorisationClient {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
-    if(messageService != null)
+    if (messageService != null)
       messageService.stopMessageService();
   }
 }
