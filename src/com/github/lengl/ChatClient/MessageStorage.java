@@ -35,9 +35,9 @@ public class MessageStorage {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
-    ListIterator msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
+    ListIterator<String> msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
     while (msgHistoryIterator.hasNext()) {
-      messageWriter.write((String) msgHistoryIterator.next());
+      messageWriter.write(msgHistoryIterator.next());
       messageWriter.newLine();
     }
     messageWriter.flush();
@@ -53,9 +53,9 @@ public class MessageStorage {
 
   public void findInHistory(String regex) throws IOException {
     boolean empty = true;
-    ListIterator msgHistoryIterator = messageHistory.listIterator(0);
+    ListIterator<String> msgHistoryIterator = messageHistory.listIterator(0);
     while (msgHistoryIterator.hasNext()) {
-      String tmp = (String) msgHistoryIterator.next();
+      String tmp = msgHistoryIterator.next();
       if (tmp.matches(regex)) {
         empty = false;
         messageWriter.write(tmp);
