@@ -104,6 +104,5 @@ public class MessageService {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
-    historyStorage.closeStorage();
   }
 }

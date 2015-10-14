@@ -15,12 +15,10 @@ public class MessageStorage {
 
   private final List<String> messageHistory = new ArrayList<>();
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
-  private final BufferedWriter messageWriter;
   private final User owner;
 
   public MessageStorage(User user) {
     owner = user;
-    messageWriter = new BufferedWriter(new OutputStreamWriter(System.out));
   }
 
   public User getOwner() {
@@ -36,36 +34,28 @@ public class MessageStorage {
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
     ListIterator<String> msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
+    StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
-      messageWriter.write(msgHistoryIterator.next());
-      messageWriter.newLine();
+      buffer.append(msgHistoryIterator.next());
+      buffer.append("\n");
     }
-    messageWriter.flush();
-  }
-
-  public void closeStorage() {
-    try {
-      messageWriter.close();
-    } catch (IOException e) {
-      log.log(Level.SEVERE, "IOException: ", e);
-    }
+    System.out.println(buffer.toString());
   }
 
   public void findInHistory(String regex) throws IOException {
-    boolean empty = true;
     ListIterator<String> msgHistoryIterator = messageHistory.listIterator(0);
+    StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
       String tmp = msgHistoryIterator.next();
       if (tmp.matches(regex)) {
-        empty = false;
-        messageWriter.write(tmp);
-        messageWriter.newLine();
+        buffer.append(tmp);
+        buffer.append("\n");
       }
     }
-    if (empty) {
-      messageWriter.write("No matches");
-      messageWriter.newLine();
+    if (buffer.length() == 0) {
+      System.out.println("No matches");
+    } else {
+      System.out.println(buffer.toString());
     }
-    messageWriter.flush();
   }
 }
