@@ -15,22 +15,24 @@ public class MessageService {
 
   private final Logger log = Logger.getLogger(MessageService.class.getName());
   private final BufferedReader bufferedReader;
-  private final MessageStorage historyStorage;
+  private final MessageStorable historyStorage;
+  private final User authorizedUser;
 
   public MessageService(User user) throws IOException {
     bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     historyStorage = new MessageStorage(user);
+    authorizedUser = user;
   }
 
   public void run() {
-    log.info("User " + historyStorage.getOwner().getLogin() + " started chat session");
+    log.info("User " + authorizedUser.getLogin() + " started chat session");
     try {
       //message reading loop
       while (react(bufferedReader.readLine())) ;
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
-    log.info("User " + historyStorage.getOwner().getLogin() + " ended chat session");
+    log.info("User " + authorizedUser.getLogin() + " ended chat session");
   }
 
   private boolean react(String input) {
@@ -48,7 +50,7 @@ public class MessageService {
         //TODO: There should probably be a better way then this one. I need some ideas
         //TODO: Should I check for empty nickname?.
         //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
-        historyStorage.getOwner().setNickname(trimmed.substring(5).trim());
+        authorizedUser.setNickname(trimmed.substring(5).trim());
         return true;
       }
 

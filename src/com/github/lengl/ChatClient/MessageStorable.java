@@ -7,4 +7,6 @@ public interface MessageStorable {
   String findMessage(String regex);
 
   String getHistory(int size);
+
+  void close();
 }
