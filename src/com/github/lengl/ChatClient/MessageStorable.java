@@ -2,7 +2,7 @@ package com.github.lengl.ChatClient;
 
 public interface MessageStorable {
 
-  void addMessage(String message);
+  void addMessage(Message message);
 
   String findMessage(String regex);
 

@@ -2,18 +2,14 @@ package com.github.lengl.ChatClient;
 
 import com.github.lengl.Authorization.User;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MessageStorage implements MessageStorable {
 
-  private final List<String> messageHistory = new ArrayList<>();
+  private final List<Message> messageHistory = new ArrayList<>();
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
   private final User owner;
 
@@ -25,7 +21,7 @@ public class MessageStorage implements MessageStorable {
     return owner;
   }
 
-  public void addMessage(String message) {
+  public void addMessage(Message message) {
     messageHistory.add(message);
   }
 
@@ -33,20 +29,20 @@ public class MessageStorage implements MessageStorable {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
-    ListIterator<String> msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
+    ListIterator<Message> msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
-      buffer.append(msgHistoryIterator.next());
+      buffer.append(msgHistoryIterator.next().getBody());
       buffer.append("\n");
     }
     return buffer.toString();
   }
 
   public String findMessage(String regex) {
-    ListIterator<String> msgHistoryIterator = messageHistory.listIterator(0);
+    ListIterator<Message> msgHistoryIterator = messageHistory.listIterator(0);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
-      String tmp = msgHistoryIterator.next();
+      String tmp = msgHistoryIterator.next().getBody();
       if (tmp.matches(regex)) {
         buffer.append(tmp);
         buffer.append("\n");
