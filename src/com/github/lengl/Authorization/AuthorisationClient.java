@@ -160,6 +160,6 @@ public class AuthorisationClient {
       log.log(Level.SEVERE, "IOException: ", e);
     }
     if (messageService != null)
-      messageService.stopMessageService();
+      messageService.stop();
   }
 }

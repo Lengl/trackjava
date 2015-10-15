@@ -17,7 +17,7 @@ public class MessageService {
   private final BufferedReader bufferedReader;
   private final MessageStorage historyStorage;
 
-  public MessageService(User user) {
+  public MessageService(User user) throws IOException {
     bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     historyStorage = new MessageStorage(user);
   }
@@ -55,16 +55,18 @@ public class MessageService {
       //print user's message history
       if (trimmed.startsWith("\\history")) {
         //TODO: There should probably be a better way then this one. I need some ideas
-        if (trimmed.equals("\\history")) {
-          historyStorage.getHistory(0);
+        String history = "empty";
+        if ("\\history".equals(trimmed)) {
+          history = historyStorage.getHistory(0);
         } else {
           try {
-            System.out.println(historyStorage.getHistory(Integer.parseInt(trimmed.substring(8).trim())));
+            history = historyStorage.getHistory(Integer.parseInt(trimmed.substring(8).trim()));
           } catch (NumberFormatException ex) {
             log.info("Wrong input parameter caught for \"history\"");
             System.out.println("Usage: \\history <quantity> or \\history");
           }
         }
+        System.out.println(history);
         return true;
       }
 
@@ -90,11 +92,12 @@ public class MessageService {
     return true;
   }
 
-  public void stopMessageService() {
+  public void stop() {
     try {
       bufferedReader.close();
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
+    historyStorage.close();
   }
 }

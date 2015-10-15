@@ -2,19 +2,58 @@ package com.github.lengl.ChatClient;
 
 import com.github.lengl.Authorization.User;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MessageStorage implements MessageStorable {
 
-  private final List<Message> messageHistory = new ArrayList<>();
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+  private final String SEPARATOR = ";";
+  private final String STOREFOLDER = "messages/";
+  private final BufferedWriter storeWriter;
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
+  private final List<Message> messageHistory = new ArrayList<>();
   private final User owner;
 
-  public MessageStorage(User user) {
+  public MessageStorage(User user) throws IOException {
     owner = user;
+
+    Path path = FileSystems.getDefault().getPath(STOREFOLDER + owner.getLogin() + ".mystore");
+    if (Files.notExists(path)) {
+      Files.createFile(path);
+      log.info("Empty store created");
+    }
+
+    BufferedReader fr = Files.newBufferedReader(path);
+    String text;
+
+    while ((text = fr.readLine()) != null) {
+      String[] parse = text.split(SEPARATOR, 2);
+      //first part is timestamp, the rest is body
+      try {
+        Date sendDate = dateFormat.parse(parse[0]);
+        messageHistory.add(new Message(parse[1], new Timestamp(sendDate.getTime())));
+      } catch (ParseException e) {
+        log.log(Level.SEVERE, "ParseException: ", e);
+      }
+    }
+    fr.close();
+
+    storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
   public User getOwner() {
@@ -23,6 +62,12 @@ public class MessageStorage implements MessageStorable {
 
   public void addMessage(Message message) {
     messageHistory.add(message);
+    try {
+      storeWriter.write(message.getTime().toString() + SEPARATOR + message.getBody());
+      storeWriter.newLine();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IO Exception: ", e);
+    }
   }
 
   public String getHistory(int size) {
@@ -52,6 +97,14 @@ public class MessageStorage implements MessageStorable {
       return "No matches";
     } else {
       return buffer.toString();
+    }
+  }
+
+  public void close() {
+    try {
+      storeWriter.close();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IO Exception: ", e);
     }
   }
 }

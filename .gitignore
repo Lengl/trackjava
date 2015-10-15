@@ -4,6 +4,9 @@ application_log.txt*
 #ignore my database
 passwordStore.mystore
 
+#ignore my messages base
+/messages
+
 # Windows image file caches
 *.db
 
