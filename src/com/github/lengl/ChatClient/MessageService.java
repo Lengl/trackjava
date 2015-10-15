@@ -52,21 +52,16 @@ public class MessageService {
 
       //print user's message history
       if (trimmed.startsWith("\\history")) {
-        try {
-          //TODO: There should probably be a better way then this one. I need some ideas
-          if (trimmed.equals("\\history")) {
-            historyStorage.printHistory(0);
-          } else {
-            try {
-              historyStorage.printHistory(Integer.parseInt(trimmed.substring(8).trim()));
-            } catch (NumberFormatException ex) {
-              log.info("Wrong input parameter caught");
-              System.out.println("Usage: \\history <quantity> or \\history");
-            }
+        //TODO: There should probably be a better way then this one. I need some ideas
+        if (trimmed.equals("\\history")) {
+          historyStorage.getHistory(0);
+        } else {
+          try {
+            System.out.println(historyStorage.getHistory(Integer.parseInt(trimmed.substring(8).trim())));
+          } catch (NumberFormatException ex) {
+            log.info("Wrong input parameter caught for \"history\"");
+            System.out.println("Usage: \\history <quantity> or \\history");
           }
-        } catch (IOException e) {
-          log.log(Level.SEVERE, "IOException: ", e);
-          System.out.println("Usage: \\history <quantity> or \\history");
         }
         return true;
       }
@@ -76,12 +71,10 @@ public class MessageService {
         try {
           String regex = trimmed.substring(5).trim();
           Pattern.compile(regex);
-          historyStorage.findInHistory(regex);
+          System.out.println(historyStorage.findMessage(regex));
         } catch (PatternSyntaxException e) {
+          log.info("Wrong input parameter caught for \"find\"");
           System.out.println("Invalid regular expression");
-        } catch (IOException e) {
-          log.log(Level.SEVERE, "IOException: ", e);
-          System.out.println("Usage: \\find <regular expression>");
         }
         return true;
       }

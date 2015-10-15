@@ -11,7 +11,7 @@ import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MessageStorage {
+public class MessageStorage implements MessageStorable {
 
   private final List<String> messageHistory = new ArrayList<>();
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
@@ -29,7 +29,7 @@ public class MessageStorage {
     messageHistory.add(message);
   }
 
-  public void printHistory(int size) throws IOException {
+  public String getHistory(int size) {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
@@ -39,10 +39,10 @@ public class MessageStorage {
       buffer.append(msgHistoryIterator.next());
       buffer.append("\n");
     }
-    System.out.println(buffer.toString());
+    return buffer.toString();
   }
 
-  public void findInHistory(String regex) throws IOException {
+  public String findMessage(String regex) {
     ListIterator<String> msgHistoryIterator = messageHistory.listIterator(0);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
@@ -53,9 +53,9 @@ public class MessageStorage {
       }
     }
     if (buffer.length() == 0) {
-      System.out.println("No matches");
+      return "No matches";
     } else {
-      System.out.println(buffer.toString());
+      return buffer.toString();
     }
   }
 }
