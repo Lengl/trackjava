@@ -21,8 +21,8 @@ public class PasswordStore {
   private final String SEPARATOR = ";";
   private final Logger log = Logger.getLogger(PasswordStore.class.getName());
   private final MessageDigest messageDigest;
-  private final Map<User, String> passMap = new HashMap<User, String>();
-  private final Map<String, User> userMap = new HashMap<String, User>();
+  private final Map<User, String> passMap = new HashMap<>();
+  private final Map<String, User> userMap = new HashMap<>();
   private final BufferedWriter storeWriter;
 
   public PasswordStore(String filename) throws IOException, NoSuchAlgorithmException {
@@ -63,10 +63,10 @@ public class PasswordStore {
   @NotNull
   public boolean checkPassword(User user, String pass) {
     if (passMap.get(user).equals(encode(pass))) {
-      log.fine("User " + user.getName() + " password check successful");
+      log.fine("User " + user.getLogin() + " password check successful");
       return true;
     } else {
-      log.info("User " + user.getName() + " password check failed");
+      log.info("User " + user.getLogin() + " password check failed");
       return false;
     }
   }
@@ -76,7 +76,7 @@ public class PasswordStore {
     byte[] result = messageDigest.digest(input.getBytes());
 
     //convert the byte to hex format
-    StringBuffer hexString = new StringBuffer();
+    StringBuilder hexString = new StringBuilder();
     for (byte resultByte : result) {
       hexString.append(Integer.toHexString(0xFF & resultByte));
     }
