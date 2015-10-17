@@ -1,4 +1,7 @@
-package com.github.lengl.Authorization;
+package com.github.lengl.Client;
+
+import com.github.lengl.Authorization.AuthorisationClient;
+import com.github.lengl.Authorization.User;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -6,17 +9,20 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-public class Main {
-  private static Logger log = Logger.getLogger(Main.class.getName());
+public class Client {
+  private static Logger log = Logger.getLogger(Client.class.getName());
+  private AuthorisationClient authorisationClient = null;
+  private User authorizedUser = null;
 
-  public static void main(String[] args) {
+  public void run() {
     try {
       LogManager.getLogManager().readConfiguration(
-          Main.class.getResourceAsStream("/logging.properties"));
+          Client.class.getResourceAsStream("/logging.properties"));
     } catch (IOException e) {
-      System.err.println("Could not setup logger configuration: " + e.toString());
+      log.log(Level.SEVERE, "Could not setup logger configuration: ", e);
+      System.err.println("Logger mistake. Please restart the client.");
+      return;
     }
-    AuthorisationClient authorisationClient = null;
     try {
       authorisationClient = new AuthorisationClient("passwordStore.mystore");
       authorisationClient.startAuthorizationCycle();

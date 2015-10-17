@@ -1,4 +1,4 @@
-package com.github.lengl.ChatClient;
+package com.github.lengl.Messages;
 
 public interface MessageStorable {
 

@@ -1,6 +1,6 @@
 package com.github.lengl.Authorization;
 
-import com.github.lengl.ChatClient.MessageService;
+import com.github.lengl.Messages.MessageService;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
