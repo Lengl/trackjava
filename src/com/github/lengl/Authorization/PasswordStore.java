@@ -37,7 +37,7 @@ public class PasswordStore {
 
     while ((text = fr.readLine()) != null) {
       String[] parse = text.split(SEPARATOR, 2);
-      //first part is user password, other is it's name
+      //first part is user password, other is it's login
       User user = new User(parse[1]);
       userMap.put(parse[1], user);
       passMap.put(user, parse[0]);
@@ -49,15 +49,15 @@ public class PasswordStore {
   }
 
   @NotNull
-  public void addPassword(@NotNull String name, @NotNull String pass) throws IOException {
-    User user = new User(name);
+  public void addPassword(@NotNull User user, @NotNull String pass) throws IOException {
+    String login = user.getLogin();
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
-    userMap.put(name, user);
-    storeWriter.write(encodedPass + SEPARATOR + name);
+    userMap.put(login, user);
+    storeWriter.write(encodedPass + SEPARATOR + login);
     storeWriter.newLine();
     //storeWriter.flush();
-    log.info("User " + name + " added to store");
+    log.info("User " + login + " added to store");
   }
 
   @NotNull
@@ -84,8 +84,8 @@ public class PasswordStore {
   }
 
   @Nullable
-  public User findUserByName(@NotNull String name) {
-    return userMap.get(name);
+  public User findUserByLogin(@NotNull String login) {
+    return userMap.get(login);
   }
 
   public void closePasswordStore() {

@@ -1,6 +1,7 @@
 package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.User;
+import com.sun.istack.internal.NotNull;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,7 +30,7 @@ public class MessageStorage implements MessageStorable {
   private final List<Message> messageHistory = new ArrayList<>();
   private final User owner;
 
-  public MessageStorage(User user) throws IOException {
+  public MessageStorage(@NotNull User user) throws IOException {
     owner = user;
 
     Path path = FileSystems.getDefault().getPath(STOREFOLDER + owner.getLogin() + ".mystore");
@@ -56,11 +57,12 @@ public class MessageStorage implements MessageStorable {
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
+  @NotNull
   public User getOwner() {
     return owner;
   }
 
-  public void addMessage(Message message) {
+  public void addMessage(@NotNull Message message) {
     messageHistory.add(message);
     try {
       storeWriter.write(message.getTime().toString() + SEPARATOR + message.getBody());
@@ -70,6 +72,7 @@ public class MessageStorage implements MessageStorable {
     }
   }
 
+  @NotNull
   public String getHistory(int size) {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
@@ -78,12 +81,16 @@ public class MessageStorage implements MessageStorable {
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
       buffer.append(msgHistoryIterator.next().getBody());
-      buffer.append("\n");
+      //TODO: There is a double-check on same condition. But it should be tested before trying to append (empty history)
+      if (msgHistoryIterator.hasNext()) {
+        buffer.append("\n");
+      }
     }
     return buffer.toString();
   }
 
-  public String findMessage(String regex) {
+  @NotNull
+  public String findMessage(@NotNull String regex) {
     ListIterator<Message> msgHistoryIterator = messageHistory.listIterator(0);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {

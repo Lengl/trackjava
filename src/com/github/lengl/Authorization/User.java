@@ -16,11 +16,12 @@ public class User {
     return login;
   }
 
+  @NotNull
   public String getNickname() {
     return nickname;
   }
 
-  public void setNickname(String nickname) {
+  public void setNickname(@NotNull String nickname) {
     this.nickname = nickname;
   }
 }

@@ -1,6 +1,7 @@
 package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.User;
+import com.sun.istack.internal.NotNull;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +19,7 @@ public class MessageService {
   private final MessageStorable historyStorage;
   private final User authorizedUser;
 
-  public MessageService(User user) throws IOException {
+  public MessageService(@NotNull User user) throws IOException {
     bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     historyStorage = new MessageStorage(user);
     authorizedUser = user;
@@ -35,7 +36,7 @@ public class MessageService {
     log.info("User " + authorizedUser.getLogin() + " ended chat session");
   }
 
-  private boolean react(String input) {
+  private boolean react(@NotNull String input) {
     Timestamp sendTime = new Timestamp(new java.util.Date().getTime());
     String trimmed = input.trim();
     if (trimmed.startsWith("\\")) {

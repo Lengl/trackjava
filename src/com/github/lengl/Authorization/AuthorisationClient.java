@@ -1,6 +1,5 @@
 package com.github.lengl.Authorization;
 
-import com.github.lengl.Messages.MessageService;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
@@ -16,14 +15,14 @@ public class AuthorisationClient {
   private final PasswordStore passwordStore;
   private final BufferedReader reader;
 
-  private MessageService messageService = null;
 
-  public AuthorisationClient(String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
+  public AuthorisationClient(@NotNull String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
     passwordStore = new PasswordStore(passwordDatabasePath);
     reader = new BufferedReader(new InputStreamReader(System.in));
   }
 
-  public void startAuthorizationCycle() {
+  @Nullable
+  public User startAuthorizationCycle() {
     log.info("Auth cycle started");
     //infinite loop1
     while (true) {
@@ -33,11 +32,10 @@ public class AuthorisationClient {
           //infinite loop2
           while (true) {
             System.out.println("Type your login:");
-            String name = reader.readLine();
+            String login = reader.readLine();
             //loop2 break condition
-            if (passwordStore.findUserByName(name) == null) {
-              getPasswordAndCreateUser(name);
-              break;
+            if (passwordStore.findUserByLogin(login) == null) {
+              return createNewUserAndAuthorise(login);
             } else {
               System.out.println("This user already exist. Try again.");
             }
@@ -45,22 +43,17 @@ public class AuthorisationClient {
         } else {
           User user = authorize();
           if (user != null) {
-            //TODO: probably need "Client" class which would start both auth cycle and message service afterwards.
-            messageService = new MessageService(user);
-            messageService.run();
+            //loop1 break condition
+            log.info("Auth cycle ended");
+            return user;
           }
-          System.out.println("Exit the program? (type \"y\" or \"yes\" to exit; type anything else to start authorization again)");
-          //loop1 break condition
-          if (answerIsYes()) {
-            break;
-          }
+          //TODO: Consider if there should be a way to quit without authorization
         }
       } catch (IOException ex) {
         log.log(Level.SEVERE, "IOException: ", ex);
-        return;
+        return null;
       }
     }
-    log.info("Auth cycle ended");
   }
 
   //returns true if user typed "y" or "yes" and false otherwise
@@ -88,7 +81,8 @@ public class AuthorisationClient {
   }
 
   //ask user to type his password twice, compare them, create user and add his password to store
-  private void getPasswordAndCreateUser(@NotNull String name) throws IOException {
+  @NotNull
+  private User createNewUserAndAuthorise(@NotNull String login) throws IOException {
     //infinite loop
     while (true) {
       System.out.println("Print your password:");
@@ -97,10 +91,11 @@ public class AuthorisationClient {
       String passwordRetyped = safePassRead();
       //loop break condition
       if (password.equals(passwordRetyped)) {
-        passwordStore.addPassword(name, password);
-        System.out.println("User created successfully. Now you can authorize with your login and password.");
-        log.info("User " + name + " created successfully");
-        break;
+        User user = new User(login);
+        passwordStore.addPassword(user, password);
+        System.out.println("User created successfully. Welcome!");
+        log.info("User " + login + " created successfully");
+        return user;
       } else {
         System.out.println("Passwords didn't match! Try again.");
       }
@@ -112,28 +107,28 @@ public class AuthorisationClient {
   private User authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
-    String name = reader.readLine();
+    String login = reader.readLine();
 
-    User user = passwordStore.findUserByName(name);
+    User user = passwordStore.findUserByLogin(login);
     if (user != null) {
       for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
         String pass = safePassRead();
         if (passwordStore.checkPassword(user, pass)) {
           System.out.println("Authorized successfully");
-          log.fine("User " + name + "authorized successfully");
+          log.fine("User " + login + "authorized successfully");
           return user;
         } else {
           System.out.println("Password incorrect. " + (i - 1) + " attempts left");
           if (i == 1) {
-            log.info("User " + name + " run out of attempts");
+            log.info("User " + login + " run out of attempts");
           }
         }
       }
     } else {
-      System.out.println("There is no user with this name. Would you like to create one? (type \"y\" or \"n\")");
+      System.out.println("There is no user with this login. Would you like to create one? (type \"y\" or \"n\")");
       if (answerIsYes()) {
-        getPasswordAndCreateUser(name);
+        return createNewUserAndAuthorise(login);
       }
     }
     return null;
@@ -159,7 +154,5 @@ public class AuthorisationClient {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
-    if (messageService != null)
-      messageService.stop();
   }
 }
