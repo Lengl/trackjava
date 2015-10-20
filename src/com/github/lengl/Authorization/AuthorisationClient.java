@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 public class AuthorisationClient {
   private final Logger log = Logger.getLogger(AuthorisationClient.class.getName());
-  private final PasswordStore passwordStore;
+  private final PasswordStorable passwordStore;
   private final BufferedReader reader;
 
 
@@ -34,7 +34,7 @@ public class AuthorisationClient {
             System.out.println("Type your login:");
             String login = reader.readLine();
             //loop2 break condition
-            if (passwordStore.findUserByLogin(login) == null) {
+            if (passwordStore.findUser(login) == null) {
               return createNewUserAndAuthorise(login);
             } else {
               System.out.println("This user already exist. Try again.");
@@ -92,7 +92,7 @@ public class AuthorisationClient {
       //loop break condition
       if (password.equals(passwordRetyped)) {
         User user = new User(login);
-        passwordStore.addPassword(user, password);
+        passwordStore.add(user, password);
         System.out.println("User created successfully. Welcome!");
         log.info("User " + login + " created successfully");
         return user;
@@ -114,12 +114,12 @@ public class AuthorisationClient {
 
   @Nullable
   public User authorize(@NotNull String login) throws IOException {
-    User user = passwordStore.findUserByLogin(login);
+    User user = passwordStore.findUser(login);
     if (user != null) {
       for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
         String pass = safePassRead();
-        if (passwordStore.checkPassword(user, pass)) {
+        if (passwordStore.check(user, pass)) {
           System.out.println("Authorized successfully");
           log.fine("User " + login + "authorized successfully");
           return user;
@@ -154,7 +154,7 @@ public class AuthorisationClient {
   public void stopAuthorizationClient() {
     //there is no check if passwordStore != null or reader != null because constructor throws exception
     //if they were not created
-    passwordStore.closePasswordStore();
+    passwordStore.close();
     try {
       reader.close();
     } catch (IOException e) {

@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PasswordStore {
+public class PasswordStore implements PasswordStorable {
   private final String SEPARATOR = ";";
   private final Logger log = Logger.getLogger(PasswordStore.class.getName());
   private final MessageDigest messageDigest;
@@ -49,7 +49,7 @@ public class PasswordStore {
   }
 
   @NotNull
-  public void addPassword(@NotNull User user, @NotNull String pass) throws IOException {
+  public void add(@NotNull User user, @NotNull String pass) throws IOException {
     String login = user.getLogin();
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
@@ -61,7 +61,7 @@ public class PasswordStore {
   }
 
   @NotNull
-  public boolean checkPassword(User user, String pass) {
+  public boolean check(User user, String pass) {
     if (passMap.get(user).equals(encode(pass))) {
       log.fine("User " + user.getLogin() + " password check successful");
       return true;
@@ -84,11 +84,11 @@ public class PasswordStore {
   }
 
   @Nullable
-  public User findUserByLogin(@NotNull String login) {
+  public User findUser(@NotNull String login) {
     return userMap.get(login);
   }
 
-  public void closePasswordStore() {
+  public void close() {
     try {
       //there is no check if storeWriter != null because constructor throws exception
       //if they were not created
