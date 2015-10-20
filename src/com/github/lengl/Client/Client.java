@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 public class Client {
   private static Logger log = Logger.getLogger(Client.class.getName());
   private AuthorisationClient authorisationClient = null;
-  private User authorizedUser = null;
   private MessageService messageService = null;
 
   public void run() {
@@ -28,15 +27,9 @@ public class Client {
     log.info("Client started");
 
     try {
-      //The main part
-      //authorisation
-      authorisationClient = new AuthorisationClient("passwordStore.mystore");
-      authorizedUser = authorisationClient.startAuthorizationCycle();
-      //message exchange
-      if (authorizedUser != null) {
-        messageService = new MessageService(authorizedUser);
-        messageService.run();
-      }
+      messageService = new MessageService();
+      messageService.run();
+
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
       System.err.println("I/O error. Please restart the client.");
@@ -47,10 +40,6 @@ public class Client {
   }
 
   public void stop() {
-    authorizedUser = null;
-    if (authorisationClient != null) {
-      authorisationClient.stopAuthorizationClient();
-    }
     if (messageService != null) {
       messageService.stop();
     }

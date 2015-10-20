@@ -104,11 +104,16 @@ public class AuthorisationClient {
 
   //ask user login, give user 3 attempts to type correct password.
   @Nullable
-  private User authorize() throws IOException {
+  public User authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
     String login = reader.readLine();
 
+    return authorize(login);
+  }
+
+  @Nullable
+  public User authorize(@NotNull String login) throws IOException {
     User user = passwordStore.findUserByLogin(login);
     if (user != null) {
       for (int i = 3; i > 0; i--) {
@@ -130,6 +135,7 @@ public class AuthorisationClient {
       if (answerIsYes()) {
         return createNewUserAndAuthorise(login);
       }
+      return null;
     }
     return null;
   }
