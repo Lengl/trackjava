@@ -3,6 +3,7 @@ package com.github.lengl.Authorization;
 import com.sun.istack.internal.NotNull;
 
 public class User {
+  private long id;
   private final String login;
   private String nickname;
 
