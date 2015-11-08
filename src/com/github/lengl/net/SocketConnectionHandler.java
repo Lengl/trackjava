@@ -4,6 +4,8 @@ import com.github.lengl.Messages.Message;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -16,19 +18,19 @@ public class SocketConnectionHandler implements ConnectionHandler{
   private final Logger log = Logger.getLogger(SocketConnectionHandler.class.getName());
   private List<MessageListener> listeners = new ArrayList<>();
   private Socket socket;
-  private InputStream in;
-  private OutputStream out;
+  private ObjectInputStream in;
+  private ObjectOutputStream out;
 
 
   public SocketConnectionHandler(Socket socket) throws IOException {
     this.socket = socket;
-    in = socket.getInputStream();
-    out = socket.getOutputStream();
+    in = new ObjectInputStream(socket.getInputStream());
+    out = new ObjectOutputStream(socket.getOutputStream());
   }
 
   @Override
   public void send(Message message) throws IOException {
-    out.write(Protocol.encode(message));
+    out.writeObject(message);
     out.flush();
   }
 
@@ -48,20 +50,16 @@ public class SocketConnectionHandler implements ConnectionHandler{
 
   @Override
   public void run() {
-    final byte[] buffer = new byte[1024 * 64];
-
     while(!Thread.currentThread().isInterrupted()) {
       try{
-        int size = in.read(buffer);
-
-        if (size > 0) {
-          Message msg = Protocol.decode(Arrays.copyOf(buffer, size));
-          log.info("Message recieved:" + msg);
-          notifyListeners(msg);
-        }
+        Message msg = (Message) in.readObject();
+        log.info("Message recieved:" + msg);
+        notifyListeners(msg);
       } catch (IOException e) {
         log.log(Level.SEVERE, "Failed to handle connection:", e);
         Thread.currentThread().interrupt();
+      } catch (ClassNotFoundException e) {
+        log.log(Level.SEVERE, "Failed to recognize object:", e);
       }
     }
   }

@@ -2,12 +2,14 @@ package com.github.lengl.Messages;
 
 import com.sun.istack.internal.NotNull;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 
-public class Message {
+public class Message implements Serializable {
   private long id;
   private long senderId;
   private long chatId;
+  private String author;
   private final String body;
   private final Timestamp time;
 
@@ -31,11 +33,28 @@ public class Message {
     return time;
   }
 
+  @NotNull
+  public long getSenderId() {
+    return senderId;
+  }
+
   @Override
   public String toString() {
     return "Message{" +
         "message=\'" + body + "\'" +
-        ", sender=" + senderId +
+        ", author=" + author +
         "}";
+  }
+
+  public void setSenderId(long senderId) {
+    this.senderId = senderId;
+  }
+
+  public String getAuthor() {
+    return author;
+  }
+
+  public void setAuthor(String author) {
+    this.author = author;
   }
 }

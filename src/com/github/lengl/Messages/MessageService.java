@@ -3,6 +3,7 @@ package com.github.lengl.Messages;
 import com.github.lengl.Authorization.AuthorisationClient;
 import com.github.lengl.Authorization.User;
 import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,38 +15,26 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class MessageService {
+public class MessageService implements InputHandler {
 
   private final Logger log = Logger.getLogger(MessageService.class.getName());
-  private final BufferedReader bufferedReader;
   private MessageStorable historyStorage;
   private final AuthorisationClient authorisationClient;
   private User authorizedUser;
 
   public MessageService(@NotNull User user) throws IOException, NoSuchAlgorithmException {
-    bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     historyStorage = new MessageStorage(user);
     authorisationClient = new AuthorisationClient("passwordStore.mystore");
     authorizedUser = user;
   }
 
   public MessageService() throws IOException, NoSuchAlgorithmException {
-    bufferedReader = new BufferedReader(new InputStreamReader(System.in));
     authorisationClient = new AuthorisationClient("passwordStore.mystore");
     historyStorage = null;
     authorizedUser = null;
   }
 
-  //TODO: Delete as useless one.
-  public void run() {
-    try {
-      //message reading loop
-      while (react(bufferedReader.readLine()) != null) ;
-    } catch (IOException e) {
-      log.log(Level.SEVERE, "IOException: ", e);
-    }
-  }
-
+  @Nullable
   public String react(@NotNull String input) {
     Timestamp sendTime = new Timestamp(new java.util.Date().getTime());
     String trimmed = input.trim();
@@ -90,8 +79,15 @@ public class MessageService {
     if (historyStorage != null) {
       historyStorage.addMessage(new Message(input, sendTime));
     }
-    //This null should mean everything is correct and no answer is needed.
+    //This null should mean everything is correct and we should just send message to everyone.
     return null;
+  }
+
+  @Override
+  public String getAuthor() {
+    if (authorizedUser == null)
+      return null;
+    return authorizedUser.getNickname();
   }
 
   private void handleLogin(@NotNull String trimmed) {
@@ -170,11 +166,6 @@ public class MessageService {
 
   public void stop() {
     authorisationClient.stopAuthorizationClient();
-    try {
-      bufferedReader.close();
-    } catch (IOException e) {
-      log.log(Level.SEVERE, "IOException: ", e);
-    }
     historyStorage.close();
   }
 }

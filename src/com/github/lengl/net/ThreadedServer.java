@@ -1,6 +1,8 @@
 package com.github.lengl.net;
 
+import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
+import com.github.lengl.Messages.MessageService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -18,6 +20,7 @@ public class ThreadedServer implements MessageListener {
   private ServerSocket sSocket;
   private boolean isRunning;
   private Map<Long, ConnectionHandler> handlers = new HashMap<>();
+  private Map<Long, InputHandler> inputHandlers = new HashMap<>();
   private AtomicLong internalCounter = new AtomicLong(0);
 
   public static final int PORT = 8123;
@@ -42,9 +45,14 @@ public class ThreadedServer implements MessageListener {
       ConnectionHandler handler = new SocketConnectionHandler(socket);
       handler.addListener(this);
 
-      handlers.put(internalCounter.incrementAndGet(), handler);
+      long senderId = internalCounter.incrementAndGet();
+      handlers.put(senderId, handler);
+      inputHandlers.put(senderId, new MessageService());
       Thread thread = new Thread(handler);
       thread.start();
+
+      //Send to client it's ID
+      handler.send(new Message(String.valueOf(senderId)));
     }
   }
 
@@ -58,8 +66,14 @@ public class ThreadedServer implements MessageListener {
   @Override
   public void onMessage(Message message) {
     try {
-      for (ConnectionHandler handler : handlers.values()) {
-        handler.send(message);
+      String ret = inputHandlers.get(message.getSenderId()).react(message.getBody());
+      if (ret != null) {
+        handlers.get(message.getSenderId()).send(new Message(ret));
+      } else {
+        message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
+        for (ConnectionHandler handler : handlers.values()) {
+          handler.send(message);
+        }
       }
     } catch (Exception e) {
       log.log(Level.INFO, "Unable to send message:", e);

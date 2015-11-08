@@ -17,6 +17,8 @@ public class ThreadedClient implements MessageListener{
   public static final int PORT = 8123;
   public static final String HOST = "localhost";
 
+  private long myId = -1;
+
   ConnectionHandler handler;
 
   public ThreadedClient() {
@@ -41,12 +43,24 @@ public class ThreadedClient implements MessageListener{
 
   public void processInput(String line) throws IOException {
     Message msg = new Message(line);
+    msg.setSenderId(myId);
     handler.send(msg);
   }
 
   @Override
   public void onMessage(Message message) {
-    System.out.printf("%s", message);
+    if (myId == -1) {
+      try {
+        myId = Long.parseLong(message.getBody());
+      } catch (NumberFormatException e) {
+        //This is something REALLY unexpected
+        //Because first message we get from server should be our ID.
+        log.log(Level.SEVERE, "First message wasn't the ID!");
+        System.err.println("Unexpected problems. Restart the client");
+        System.exit(0);
+      }
+    }
+    System.out.printf("%s\n", message.getBody());
   }
 
   public static void main(String[] args) throws Exception{
@@ -63,10 +77,11 @@ public class ThreadedClient implements MessageListener{
     System.out.println("$");
     while (true) {
       String input = scanner.next();
+      client.processInput(input);
       if ("/q".equals(input) || "/quit".equals(input)) {
+        client.handler.stop();
         return;
       }
-      client.processInput(input);
     }
   }
 }
