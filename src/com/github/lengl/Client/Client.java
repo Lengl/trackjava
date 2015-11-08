@@ -28,7 +28,6 @@ public class Client {
 
     try {
       messageService = new MessageService();
-      messageService.run();
 
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);

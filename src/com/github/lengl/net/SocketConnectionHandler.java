@@ -3,13 +3,10 @@ package com.github.lengl.net;
 import com.github.lengl.Messages.Message;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,14 +15,14 @@ public class SocketConnectionHandler implements ConnectionHandler{
   private final Logger log = Logger.getLogger(SocketConnectionHandler.class.getName());
   private List<MessageListener> listeners = new ArrayList<>();
   private Socket socket;
-  private ObjectInputStream in;
   private ObjectOutputStream out;
+  private ObjectInputStream in;
 
 
   public SocketConnectionHandler(Socket socket) throws IOException {
     this.socket = socket;
-    in = new ObjectInputStream(socket.getInputStream());
     out = new ObjectOutputStream(socket.getOutputStream());
+    in = new ObjectInputStream(socket.getInputStream());
   }
 
   @Override

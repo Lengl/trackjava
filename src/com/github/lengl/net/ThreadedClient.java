@@ -59,8 +59,9 @@ public class ThreadedClient implements MessageListener{
         System.err.println("Unexpected problems. Restart the client");
         System.exit(0);
       }
+    } else {
+      System.out.printf("%s\n", message.getBody());
     }
-    System.out.printf("%s\n", message.getBody());
   }
 
   public static void main(String[] args) throws Exception{
