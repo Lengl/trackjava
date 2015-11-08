@@ -8,6 +8,8 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class ThreadedServer implements MessageListener {
@@ -25,7 +27,7 @@ public class ThreadedServer implements MessageListener {
       sSocket = new ServerSocket(PORT);
       sSocket.setReuseAddress(true);
     } catch (IOException e) {
-      e.printStackTrace();
+      log.log(Level.SEVERE, "IO Exception: ", e);
       System.exit(0);
     }
   }
@@ -60,11 +62,18 @@ public class ThreadedServer implements MessageListener {
         handler.send(message);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.log(Level.INFO, "Unable to send message:", e);
     }
   }
 
   public static void main(String[] args) throws Exception {
+    try {
+      LogManager.getLogManager().readConfiguration(
+          ThreadedServer.class.getResourceAsStream("/logging.properties"));
+    } catch (IOException e) {
+      System.err.println("Logger error. Server shutdown.");
+      System.exit(0);
+    }
     ThreadedServer server = new ThreadedServer();
     server.startServer();
   }
