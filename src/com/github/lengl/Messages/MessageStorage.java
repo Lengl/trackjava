@@ -86,7 +86,12 @@ public class MessageStorage implements MessageStorable {
         buffer.append("\n");
       }
     }
-    return buffer.toString();
+    String ret = buffer.toString();
+    if (ret.isEmpty()) {
+      return "empty";
+    } else {
+      return ret;
+    }
   }
 
   @NotNull

@@ -36,59 +36,62 @@ public class MessageService {
     authorizedUser = null;
   }
 
-
+  //TODO: Delete as useless one.
   public void run() {
     try {
       //message reading loop
-      while (react(bufferedReader.readLine())) ;
+      while (react(bufferedReader.readLine()) != null) ;
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
     }
   }
 
-  private boolean react(@NotNull String input) {
+  public String react(@NotNull String input) {
     Timestamp sendTime = new Timestamp(new java.util.Date().getTime());
     String trimmed = input.trim();
     if (trimmed.startsWith("/")) {
       //login as smone
+      //TODO: Rework authorisation cycle
       if (trimmed.startsWith("/login")) {
         handleLogin(trimmed);
-        return true;
+        return null;
       }
 
       //print help message
       if ("/help".equals(trimmed)) {
-        System.out.println("/help\n/login <your login>\n/user <nickname>\n/history <amount>\n/quit");
-        return true;
+        return "/help\n" +
+            "/login <your login>\n" +
+            "/user <nickname>\n" +
+            "/history <amount>\n" +
+            "/quit";
       }
 
       //change user nickname
       if (trimmed.startsWith("/user")) {
-        handleNickname(trimmed);
-        return true;
-      }
+        return handleNickname(trimmed);
+    }
 
       //print user's message history
       if (trimmed.startsWith("/history")) {
-        handleHistory(trimmed);
-        return true;
+        return handleHistory(trimmed);
       }
 
       //find messages matching regex
       if (trimmed.startsWith("/find")) {
-        handleFind(trimmed);
-        return true;
+        return handleFind(trimmed);
       }
 
       //finish sending messages
+      //TODO: define what to do with this one
       if ("/quit".equals(trimmed)) {
-        return false;
+        return null;
       }
     }
     if (historyStorage != null) {
       historyStorage.addMessage(new Message(input, sendTime));
     }
-    return true;
+    //This null should mean everything is correct and no answer is needed.
+    return null;
   }
 
   private void handleLogin(@NotNull String trimmed) {
@@ -118,20 +121,21 @@ public class MessageService {
     }
   }
 
-  private void handleNickname(@NotNull String trimmed) {
+  private String handleNickname(@NotNull String trimmed) {
     //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
     int OFFSET = 5; //length of string "/user"
     if (authorizedUser != null) {
       authorizedUser.setNickname(trimmed.substring(OFFSET).trim());
+      return "Username " + trimmed.substring(OFFSET).trim() + " set successfully.";
     } else {
-      System.out.println("You need to be authorized (/login) to use this command.");
+      return "You need to be authorized (/login) to use this command.";
     }
   }
 
-  private void handleHistory(@NotNull String trimmed) {
+  private String handleHistory(@NotNull String trimmed) {
     int OFFSET = 8; //length of string "/history"
     if (authorizedUser != null) {
-      String history = "empty";
+      String history;
       if ("/history".equals(trimmed)) {
         history = historyStorage.getHistory(0);
       } else {
@@ -139,28 +143,28 @@ public class MessageService {
           history = historyStorage.getHistory(Integer.parseInt(trimmed.substring(OFFSET).trim()));
         } catch (NumberFormatException ex) {
           log.info("Wrong input parameter caught for \"history\"");
-          System.out.println("Usage: /history <quantity> or /history");
+          return "Usage: /history <quantity> or /history";
         }
       }
-      System.out.println(history);
+      return history;
     } else {
-      System.out.println("You need to be authorized (/login) to use this command.");
+      return "You need to be authorized (/login) to use this command.";
     }
   }
 
-  private void handleFind(@NotNull String trimmed) {
+  private String handleFind(@NotNull String trimmed) {
     int OFFSET = 5; //length of string "/find"
     if (authorizedUser != null) {
       try {
         String regex = trimmed.substring(OFFSET).trim();
         Pattern.compile(regex);
-        System.out.println(historyStorage.findMessage(regex));
+        return historyStorage.findMessage(regex);
       } catch (PatternSyntaxException e) {
         log.info("Wrong input parameter caught for \"find\"");
-        System.out.println("Invalid regular expression");
+        return "Invalid regular expression";
       }
     } else {
-      System.out.println("You need to be authorized (/login) to use this command.");
+      return "You need to be authorized (/login) to use this command.";
     }
   }
 
