@@ -1,5 +1,6 @@
 package com.github.lengl.net;
 
+import com.github.lengl.ChatRoom.ChatRoom;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
 import com.github.lengl.Messages.MessageService;
@@ -23,7 +24,8 @@ public class ThreadedServer implements MessageListener {
   private Map<Long, ConnectionHandler> handlers = new HashMap<>();
   private Map<Long, Thread> handlerThreads = new HashMap<>();
   private Map<Long, InputHandler> inputHandlers = new HashMap<>();
-  private AtomicLong internalCounter = new AtomicLong(0);
+  private Map<Long, ChatRoom> chatRooms = new HashMap<>();
+  private AtomicLong internalCounterID = new AtomicLong(0);
 
   public ThreadedServer() {
     try {
@@ -57,7 +59,7 @@ public class ThreadedServer implements MessageListener {
       ConnectionHandler handler = new SocketConnectionHandler(socket);
       handler.addListener(this);
 
-      long senderId = internalCounter.incrementAndGet();
+      long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
       inputHandlers.put(senderId, new MessageService());
       Thread thread = new Thread(handler);

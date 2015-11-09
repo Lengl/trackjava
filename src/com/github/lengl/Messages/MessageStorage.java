@@ -28,12 +28,9 @@ public class MessageStorage implements MessageStorable {
   private final BufferedWriter storeWriter;
   private final Logger log = Logger.getLogger(MessageStorage.class.getName());
   private final List<Message> messageHistory = new ArrayList<>();
-  private final User owner;
 
   public MessageStorage(@NotNull User user) throws IOException {
-    owner = user;
-
-    Path path = FileSystems.getDefault().getPath(STOREFOLDER + owner.getLogin() + ".mystore");
+    Path path = FileSystems.getDefault().getPath(STOREFOLDER + user.getLogin() + ".mystore");
     if (Files.notExists(path)) {
       Files.createFile(path);
       log.info("Empty store created");
@@ -57,9 +54,29 @@ public class MessageStorage implements MessageStorable {
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
-  @NotNull
-  public User getOwner() {
-    return owner;
+  public MessageStorage(long chatId) throws IOException {
+    Path path = FileSystems.getDefault().getPath(STOREFOLDER + "chat" + chatId + ".mystore");
+    if (Files.notExists(path)) {
+      Files.createFile(path);
+      log.info("Empty store created");
+    }
+
+    BufferedReader fr = Files.newBufferedReader(path);
+    String text;
+
+    while ((text = fr.readLine()) != null) {
+      String[] parse = text.split(SEPARATOR, 2);
+      //first part is timestamp, the rest is body
+      try {
+        Date sendDate = dateFormat.parse(parse[0]);
+        messageHistory.add(new Message(parse[1], new Timestamp(sendDate.getTime())));
+      } catch (ParseException e) {
+        log.log(Level.SEVERE, "ParseException: ", e);
+      }
+    }
+    fr.close();
+
+    storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
   public void addMessage(@NotNull Message message) {

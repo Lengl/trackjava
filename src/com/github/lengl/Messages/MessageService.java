@@ -21,6 +21,12 @@ public class MessageService implements InputHandler {
   private MessageStorable historyStorage;
   private User authorizedUser;
 
+  public MessageService(@NotNull User user, @NotNull MessageStorable storage) throws IOException, NoSuchAlgorithmException {
+    authorisationService = new AuthorisationService();
+    historyStorage = storage;
+    authorizedUser = user;
+  }
+
   public MessageService(@Nullable User user) throws IOException, NoSuchAlgorithmException {
     if (user != null) {
       historyStorage = new MessageStorage(user);
