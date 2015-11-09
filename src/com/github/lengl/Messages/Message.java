@@ -40,10 +40,8 @@ public class Message implements Serializable {
 
   @Override
   public String toString() {
-    return "Message{" +
-        "message=\'" + body + "\'" +
-        ", author=" + author +
-        "}";
+    return "Author=<" + ((author != null) ? author : "unknown") + ">" +
+        ", Message=<" + body + ">";
   }
 
   public void setSenderId(long senderId) {

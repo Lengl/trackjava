@@ -1,13 +1,12 @@
 package com.github.lengl.Messages;
 
-import com.github.lengl.Authorization.AuthorisationClient;
+import com.github.lengl.Authorization.AuthorisationService;
+import com.github.lengl.Authorization.AuthorisationServiceResponse;
 import com.github.lengl.Authorization.User;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.logging.Level;
@@ -18,18 +17,18 @@ import java.util.regex.PatternSyntaxException;
 public class MessageService implements InputHandler {
 
   private final Logger log = Logger.getLogger(MessageService.class.getName());
+  private final AuthorisationService authorisationService;
   private MessageStorable historyStorage;
-  private final AuthorisationClient authorisationClient;
   private User authorizedUser;
 
   public MessageService(@NotNull User user) throws IOException, NoSuchAlgorithmException {
     historyStorage = new MessageStorage(user);
-    authorisationClient = new AuthorisationClient("passwordStore.mystore");
+    authorisationService = new AuthorisationService("passwordStore.mystore");
     authorizedUser = user;
   }
 
   public MessageService() throws IOException, NoSuchAlgorithmException {
-    authorisationClient = new AuthorisationClient("passwordStore.mystore");
+    authorisationService = new AuthorisationService("passwordStore.mystore");
     historyStorage = null;
     authorizedUser = null;
   }
@@ -42,8 +41,7 @@ public class MessageService implements InputHandler {
       //login as smone
       //TODO: Rework authorisation cycle
       if (trimmed.startsWith("/login")) {
-        handleLogin(trimmed);
-        return null;
+        return handleLogin(trimmed);
       }
 
       //print help message
@@ -58,7 +56,7 @@ public class MessageService implements InputHandler {
       //change user nickname
       if (trimmed.startsWith("/user")) {
         return handleNickname(trimmed);
-    }
+      }
 
       //print user's message history
       if (trimmed.startsWith("/history")) {
@@ -71,9 +69,8 @@ public class MessageService implements InputHandler {
       }
 
       //finish sending messages
-      //TODO: define what to do with this one
-      if ("/quit".equals(trimmed)) {
-        return null;
+      if ("/q".equals(trimmed) || "/quit".equals(trimmed)) {
+        return "Goodbye!";
       }
     }
     if (historyStorage != null) {
@@ -90,30 +87,23 @@ public class MessageService implements InputHandler {
     return authorizedUser.getNickname();
   }
 
-  private void handleLogin(@NotNull String trimmed) {
-    if ("/login".equals(trimmed)) {
-      User authorizedTemp = authorisationClient.startAuthorizationCycle();
-      try {
-        if (authorizedTemp != null) {
-          historyStorage = new MessageStorage(authorizedTemp);
-          authorizedUser = authorizedTemp;
-        }
-      } catch (IOException e) {
-        log.log(Level.SEVERE, "IOException: ", e);
-        System.err.println("Unable to open history. Please try to authorize again");
+  private String handleLogin(@NotNull String trimmed) {
+    int OFFSET = 6; //length of string "/login"
+    String userAndPwd = trimmed.substring(OFFSET).trim();
+    String[] parsed = userAndPwd.trim().split(" ", 2);
+    if (parsed.length == 1) {
+      return "Usage: /login <your login> <your password>";
+    }
+    try {
+      AuthorisationServiceResponse response = authorisationService.authorize(parsed[0], parsed[1]);
+      if (response.user != null) {
+        authorizedUser = response.user;
+        historyStorage = new MessageStorage(authorizedUser);
       }
-    } else {
-      String[] parsed = trimmed.split(" ", 2);
-      try {
-        User authorizedTemp = authorisationClient.authorize(parsed[1]);
-        if (authorizedTemp != null) {
-          historyStorage = new MessageStorage(authorizedUser);
-          authorizedUser = authorizedTemp;
-        }
-      } catch (IOException e) {
-        log.log(Level.SEVERE, "IOException: ", e);
-        System.err.println("Usage: /login <your login>");
-      }
+      return response.response;
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IOException: ", e);
+      return "Usage: /login <your login> <your password>";
     }
   }
 
@@ -165,7 +155,7 @@ public class MessageService implements InputHandler {
   }
 
   public void stop() {
-    authorisationClient.stopAuthorizationClient();
+    authorisationService.stopAuthorizationClient();
     historyStorage.close();
   }
 }

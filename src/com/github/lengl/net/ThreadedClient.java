@@ -10,16 +10,14 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-public class ThreadedClient implements MessageListener{
-
-  private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
+public class ThreadedClient implements MessageListener {
 
   public static final int PORT = 8123;
   public static final String HOST = "localhost";
-
-  private long myId = -1;
-
+  private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
   ConnectionHandler handler;
+  Thread socketHandlerThread;
+  private long myId = -1;
 
   public ThreadedClient() {
     try {
@@ -28,8 +26,8 @@ public class ThreadedClient implements MessageListener{
 
       handler.addListener(this);
 
-      Thread socketHandler = new Thread(handler);
-      socketHandler.start();
+      socketHandlerThread = new Thread(handler);
+      socketHandlerThread.start();
     } catch (UnknownHostException e) {
       log.log(Level.SEVERE, "Unknown host: ", e);
       System.err.println("Host exception. Restart the client");
@@ -38,6 +36,30 @@ public class ThreadedClient implements MessageListener{
       log.log(Level.SEVERE, "IOExceptopn: ", e);
       System.err.println("IO exception. Restart the client");
       System.exit(0);
+    }
+  }
+
+  public static void main(String[] args) throws Exception {
+    try {
+      LogManager.getLogManager().readConfiguration(
+          ThreadedClient.class.getResourceAsStream("/logging.properties"));
+    } catch (IOException e) {
+      System.err.println("Logger error. Please restart the client.");
+      System.exit(0);
+    }
+    ThreadedClient client = new ThreadedClient();
+
+    Scanner scanner = new Scanner(System.in);
+    System.out.println("Waiting for connection...");
+    //TODO: Add waiting while myId == -1
+    System.out.println("Connected.");
+    while (true) {
+      String input = scanner.nextLine();
+      client.processInput(input);
+      if ("/q".equals(input) || "/quit".equals(input)) {
+        client.socketHandlerThread.interrupt();
+        return;
+      }
     }
   }
 
@@ -60,29 +82,7 @@ public class ThreadedClient implements MessageListener{
         System.exit(0);
       }
     } else {
-      System.out.printf("%s\n", message.getBody());
-    }
-  }
-
-  public static void main(String[] args) throws Exception{
-    try {
-      LogManager.getLogManager().readConfiguration(
-          ThreadedClient.class.getResourceAsStream("/logging.properties"));
-    } catch (IOException e) {
-      System.err.println("Logger error. Please restart the client.");
-      System.exit(0);
-    }
-    ThreadedClient client = new ThreadedClient();
-
-    Scanner scanner = new Scanner(System.in);
-    System.out.println("$");
-    while (true) {
-      String input = scanner.next();
-      client.processInput(input);
-      if ("/q".equals(input) || "/quit".equals(input)) {
-        client.handler.stop();
-        return;
-      }
+      System.out.printf("%s\n", message);
     }
   }
 }

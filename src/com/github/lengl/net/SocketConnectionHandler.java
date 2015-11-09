@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SocketConnectionHandler implements ConnectionHandler{
+public class SocketConnectionHandler implements ConnectionHandler {
   private final Logger log = Logger.getLogger(SocketConnectionHandler.class.getName());
   private List<MessageListener> listeners = new ArrayList<>();
   private Socket socket;
@@ -42,13 +42,13 @@ public class SocketConnectionHandler implements ConnectionHandler{
 
   @Override
   public void stop() {
-    Thread.currentThread().interrupt();
+    log.info("Connection closed.");
   }
 
   @Override
   public void run() {
-    while(!Thread.currentThread().isInterrupted()) {
-      try{
+    while (!Thread.currentThread().isInterrupted() && socket.isConnected()) {
+      try {
         Message msg = (Message) in.readObject();
         log.info("Message recieved:" + msg);
         notifyListeners(msg);
@@ -59,5 +59,6 @@ public class SocketConnectionHandler implements ConnectionHandler{
         log.log(Level.SEVERE, "Failed to recognize object:", e);
       }
     }
+    stop();
   }
 }

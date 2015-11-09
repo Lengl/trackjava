@@ -16,14 +16,14 @@ import java.util.logging.Logger;
 
 public class ThreadedServer implements MessageListener {
 
+  public static final int PORT = 8123;
   private final Logger log = Logger.getLogger(ThreadedServer.class.getName());
   private ServerSocket sSocket;
   private boolean isRunning;
   private Map<Long, ConnectionHandler> handlers = new HashMap<>();
+  private Map<Long, Thread> handlerThreads = new HashMap<>();
   private Map<Long, InputHandler> inputHandlers = new HashMap<>();
   private AtomicLong internalCounter = new AtomicLong(0);
-
-  public static final int PORT = 8123;
 
   public ThreadedServer() {
     try {
@@ -33,6 +33,18 @@ public class ThreadedServer implements MessageListener {
       log.log(Level.SEVERE, "IO Exception: ", e);
       System.exit(0);
     }
+  }
+
+  public static void main(String[] args) throws Exception {
+    try {
+      LogManager.getLogManager().readConfiguration(
+          ThreadedServer.class.getResourceAsStream("/logging.properties"));
+    } catch (IOException e) {
+      System.err.println("Logger error. Server shutdown.");
+      System.exit(0);
+    }
+    ThreadedServer server = new ThreadedServer();
+    server.startServer();
   }
 
   public void startServer() throws Exception {
@@ -50,6 +62,7 @@ public class ThreadedServer implements MessageListener {
       inputHandlers.put(senderId, new MessageService());
       Thread thread = new Thread(handler);
       thread.start();
+      handlerThreads.put(senderId, thread);
 
       //Send to client it's ID
       handler.send(new Message(String.valueOf(senderId)));
@@ -69,6 +82,12 @@ public class ThreadedServer implements MessageListener {
       String ret = inputHandlers.get(message.getSenderId()).react(message.getBody());
       if (ret != null) {
         handlers.get(message.getSenderId()).send(new Message(ret));
+        //TODO: Get rid of duplicated check
+        if ("/quit".equals(message.getBody().trim()) || "/q".equals(message.getBody().trim())) {
+          handlers.remove(message.getSenderId());
+          handlerThreads.get(message.getSenderId()).interrupt();
+          handlerThreads.remove(message.getSenderId());
+        }
       } else {
         message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
         for (ConnectionHandler handler : handlers.values()) {
@@ -78,17 +97,5 @@ public class ThreadedServer implements MessageListener {
     } catch (Exception e) {
       log.log(Level.INFO, "Unable to send message:", e);
     }
-  }
-
-  public static void main(String[] args) throws Exception {
-    try {
-      LogManager.getLogManager().readConfiguration(
-          ThreadedServer.class.getResourceAsStream("/logging.properties"));
-    } catch (IOException e) {
-      System.err.println("Logger error. Server shutdown.");
-      System.exit(0);
-    }
-    ThreadedServer server = new ThreadedServer();
-    server.startServer();
   }
 }

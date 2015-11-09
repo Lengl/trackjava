@@ -10,13 +10,13 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class AuthorisationClient {
-  private final Logger log = Logger.getLogger(AuthorisationClient.class.getName());
+public class AuthorisationService {
+  private final Logger log = Logger.getLogger(AuthorisationService.class.getName());
   private final PasswordStorable passwordStore;
   private final BufferedReader reader;
 
 
-  public AuthorisationClient(@NotNull String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
+  public AuthorisationService(@NotNull String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
     passwordStore = new PasswordStore(passwordDatabasePath);
     reader = new BufferedReader(new InputStreamReader(System.in));
   }
@@ -138,6 +138,23 @@ public class AuthorisationClient {
       return null;
     }
     return null;
+  }
+
+  @Nullable
+  public AuthorisationServiceResponse authorize(@NotNull String login, @NotNull String password) {
+    User user = passwordStore.findUser(login);
+    if (user != null) {
+      if (passwordStore.check(user, password)) {
+        log.fine("User " + login + "authorised successfully");
+        return new AuthorisationServiceResponse(user, "Authorised successfully");
+      } else {
+        log.info("Password incorrect.");
+        return new AuthorisationServiceResponse(null, "Incorrect password");
+      }
+    } else {
+      log.info("User not found");
+      return new AuthorisationServiceResponse(null, "There is no user with this login.");
+    }
   }
 
   //if there is a console - tries to readPassword (without echoing), otherwise read normally
