@@ -2,7 +2,7 @@ package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.AuthorisationServiceResponse;
-import com.github.lengl.Authorization.User;
+import com.github.lengl.Users.User;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
@@ -21,16 +21,18 @@ public class MessageService implements InputHandler {
   private MessageStorable historyStorage;
   private User authorizedUser;
 
-  public MessageService(@NotNull User user) throws IOException, NoSuchAlgorithmException {
-    historyStorage = new MessageStorage(user);
-    authorisationService = new AuthorisationService("passwordStore.mystore");
+  public MessageService(@Nullable User user) throws IOException, NoSuchAlgorithmException {
+    if (user != null) {
+      historyStorage = new MessageStorage(user);
+    } else {
+      historyStorage = null;
+    }
+    authorisationService = new AuthorisationService();
     authorizedUser = user;
   }
 
   public MessageService() throws IOException, NoSuchAlgorithmException {
-    authorisationService = new AuthorisationService("passwordStore.mystore");
-    historyStorage = null;
-    authorizedUser = null;
+    this(null);
   }
 
   @Nullable

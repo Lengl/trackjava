@@ -1,7 +1,9 @@
 package com.github.lengl.Authorization;
 
+import com.github.lengl.Users.User;
+import com.github.lengl.Users.UserStorable;
+import com.github.lengl.Users.UserStorage;
 import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -17,15 +19,14 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PasswordStore implements PasswordStorable {
+public class PasswordStorage implements PasswordStorable {
   private final String SEPARATOR = ";";
-  private final Logger log = Logger.getLogger(PasswordStore.class.getName());
+  private final Logger log = Logger.getLogger(PasswordStorage.class.getName());
   private final MessageDigest messageDigest;
   private final Map<User, String> passMap = new HashMap<>();
-  private final Map<String, User> userMap = new HashMap<>();
   private final BufferedWriter storeWriter;
 
-  public PasswordStore(String filename) throws IOException, NoSuchAlgorithmException {
+  public PasswordStorage(@NotNull String filename, @NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
     Path path = FileSystems.getDefault().getPath(filename);
     if (Files.notExists(path)) {
       Files.createFile(path);
@@ -37,10 +38,8 @@ public class PasswordStore implements PasswordStorable {
 
     while ((text = fr.readLine()) != null) {
       String[] parse = text.split(SEPARATOR, 2);
-      //first part is user password, other is it's login
-      User user = new User(parse[1]);
-      userMap.put(parse[1], user);
-      passMap.put(user, parse[0]);
+      //first part is user password hash, other is it's login
+      passMap.put(userStore.findUserByLogin(parse[1]), parse[0]);
     }
     fr.close();
 
@@ -48,12 +47,23 @@ public class PasswordStore implements PasswordStorable {
     messageDigest = MessageDigest.getInstance("SHA1");
   }
 
+  public PasswordStorage(@NotNull String filename) throws IOException, NoSuchAlgorithmException {
+    this(filename, new UserStorage());
+  }
+
+  public PasswordStorage(@NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
+    this("passwordStore.mystore", userStore);
+  }
+
+  public PasswordStorage() throws IOException, NoSuchAlgorithmException {
+    this("passwordStore.mystore", new UserStorage());
+  }
+
   @NotNull
   public void add(@NotNull User user, @NotNull String pass) throws IOException {
     String login = user.getLogin();
     String encodedPass = encode(pass);
     passMap.put(user, encodedPass);
-    userMap.put(login, user);
     storeWriter.write(encodedPass + SEPARATOR + login);
     storeWriter.newLine();
     //storeWriter.flush();
@@ -81,11 +91,6 @@ public class PasswordStore implements PasswordStorable {
       hexString.append(Integer.toHexString(0xFF & resultByte));
     }
     return hexString.toString();
-  }
-
-  @Nullable
-  public User findUser(@NotNull String login) {
-    return userMap.get(login);
   }
 
   public void close() {

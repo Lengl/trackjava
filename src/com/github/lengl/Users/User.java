@@ -1,15 +1,16 @@
-package com.github.lengl.Authorization;
+package com.github.lengl.Users;
 
 import com.sun.istack.internal.NotNull;
 
 public class User {
-  private long id;
+  private final long id;
   private final String login;
   private String nickname;
 
-  public User(String login) {
+  public User(String login, long id) {
     this.login = login;
     this.nickname = login;
+    this.id = id;
   }
 
   @NotNull
@@ -24,5 +25,9 @@ public class User {
 
   public void setNickname(@NotNull String nickname) {
     this.nickname = nickname;
+  }
+
+  public long getId() {
+    return id;
   }
 }

@@ -2,7 +2,8 @@
 /logs
 
 #ignore my database
-passwordStore.mystore
+/userStore.mystore
+/passwordStore.mystore
 
 #ignore my messages base
 /messages

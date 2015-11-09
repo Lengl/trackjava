@@ -1,6 +1,6 @@
 package com.github.lengl.Messages;
 
-import com.github.lengl.Authorization.User;
+import com.github.lengl.Users.User;
 import com.sun.istack.internal.NotNull;
 
 import java.io.BufferedReader;

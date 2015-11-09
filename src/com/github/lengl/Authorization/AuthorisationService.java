@@ -1,5 +1,8 @@
 package com.github.lengl.Authorization;
 
+import com.github.lengl.Users.User;
+import com.github.lengl.Users.UserStorable;
+import com.github.lengl.Users.UserStorage;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
@@ -12,12 +15,20 @@ import java.util.logging.Logger;
 
 public class AuthorisationService {
   private final Logger log = Logger.getLogger(AuthorisationService.class.getName());
-  private final PasswordStorable passwordStore;
+  private final PasswordStorable passwordStorage;
+  private final UserStorable userStorage;
   private final BufferedReader reader;
 
 
-  public AuthorisationService(@NotNull String passwordDatabasePath) throws IOException, NoSuchAlgorithmException {
-    passwordStore = new PasswordStore(passwordDatabasePath);
+  public AuthorisationService(@NotNull String passwordStoragePath, @NotNull String userStoragePath) throws IOException, NoSuchAlgorithmException {
+    userStorage = new UserStorage(userStoragePath);
+    passwordStorage = new PasswordStorage(passwordStoragePath, userStorage);
+    reader = new BufferedReader(new InputStreamReader(System.in));
+  }
+
+  public AuthorisationService() throws IOException, NoSuchAlgorithmException {
+    userStorage = new UserStorage();
+    passwordStorage = new PasswordStorage(userStorage);
     reader = new BufferedReader(new InputStreamReader(System.in));
   }
 
@@ -34,7 +45,7 @@ public class AuthorisationService {
             System.out.println("Type your login:");
             String login = reader.readLine();
             //loop2 break condition
-            if (passwordStore.findUser(login) == null) {
+            if (userStorage.findUserByLogin(login) == null) {
               return createNewUserAndAuthorise(login);
             } else {
               System.out.println("This user already exist. Try again.");
@@ -91,8 +102,8 @@ public class AuthorisationService {
       String passwordRetyped = safePassRead();
       //loop break condition
       if (password.equals(passwordRetyped)) {
-        User user = new User(login);
-        passwordStore.add(user, password);
+        User user = userStorage.create(login);
+        passwordStorage.add(user, password);
         System.out.println("User created successfully. Welcome!");
         log.info("User " + login + " created successfully");
         return user;
@@ -114,12 +125,12 @@ public class AuthorisationService {
 
   @Nullable
   public User authorize(@NotNull String login) throws IOException {
-    User user = passwordStore.findUser(login);
+    User user = userStorage.findUserByLogin(login);
     if (user != null) {
       for (int i = 3; i > 0; i--) {
         System.out.println("Type your password:");
         String pass = safePassRead();
-        if (passwordStore.check(user, pass)) {
+        if (passwordStorage.check(user, pass)) {
           System.out.println("Authorized successfully");
           log.fine("User " + login + "authorized successfully");
           return user;
@@ -142,9 +153,9 @@ public class AuthorisationService {
 
   @Nullable
   public AuthorisationServiceResponse authorize(@NotNull String login, @NotNull String password) {
-    User user = passwordStore.findUser(login);
+    User user = userStorage.findUserByLogin(login);
     if (user != null) {
-      if (passwordStore.check(user, password)) {
+      if (passwordStorage.check(user, password)) {
         log.fine("User " + login + "authorised successfully");
         return new AuthorisationServiceResponse(user, "Authorised successfully");
       } else {
@@ -169,9 +180,10 @@ public class AuthorisationService {
 
   //free our resources
   public void stopAuthorizationClient() {
-    //there is no check if passwordStore != null or reader != null because constructor throws exception
+    //there is no check if passwordStorage != null or reader != null because constructor throws exception
     //if they were not created
-    passwordStore.close();
+    passwordStorage.close();
+    userStorage.close();
     try {
       reader.close();
     } catch (IOException e) {
