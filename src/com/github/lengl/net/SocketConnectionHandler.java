@@ -42,6 +42,13 @@ public class SocketConnectionHandler implements ConnectionHandler {
 
   @Override
   public void stop() {
+    try {
+      in.close();
+      out.close();
+      socket.close();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "Exception while closing socket", e);
+    }
     log.info("Connection closed.");
   }
 

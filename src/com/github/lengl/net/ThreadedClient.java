@@ -17,7 +17,7 @@ public class ThreadedClient implements MessageListener {
   private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
   ConnectionHandler handler;
   Thread socketHandlerThread;
-  private long myId = -1;
+  volatile long myId = -1;
 
   public ThreadedClient() {
     try {
@@ -51,7 +51,7 @@ public class ThreadedClient implements MessageListener {
 
     Scanner scanner = new Scanner(System.in);
     System.out.println("Waiting for connection...");
-    //TODO: Add waiting while myId == -1
+    while (client.myId == -1);
     System.out.println("Connected.");
     while (true) {
       String input = scanner.nextLine();
@@ -82,7 +82,7 @@ public class ThreadedClient implements MessageListener {
         System.exit(0);
       }
     } else {
-      System.out.printf("%s\n", message);
+      System.out.printf("%s: %s\n", message.getAuthor(), message.getBody());
     }
   }
 }

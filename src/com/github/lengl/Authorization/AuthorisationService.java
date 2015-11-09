@@ -33,6 +33,8 @@ public class AuthorisationService {
   }
 
   @Nullable
+  @Deprecated
+  //TODO: rework to be part of the client handler
   public User startAuthorizationCycle() {
     log.info("Auth cycle started");
     //infinite loop1
@@ -69,12 +71,16 @@ public class AuthorisationService {
 
   //returns true if user typed "y" or "yes" and false otherwise
   @NotNull
+  @Deprecated
+  //TODO: rework to be part of the client handler
   private boolean answerIsYes() throws IOException {
     String answer = reader.readLine().toLowerCase();
     return "y".equals(answer) || "yes".equals(answer);
   }
 
   @NotNull
+  @Deprecated
+  //TODO: rework to be part of the client handler
   private boolean tryToGetYesOrNoAnswer() throws IOException {
     String answer;
     while (true) {
@@ -93,6 +99,8 @@ public class AuthorisationService {
 
   //ask user to type his password twice, compare them, create user and add his password to store
   @NotNull
+  @Deprecated
+  //TODO: rework to be part of the client handler
   private User createNewUserAndAuthorise(@NotNull String login) throws IOException {
     //infinite loop
     while (true) {
@@ -115,6 +123,8 @@ public class AuthorisationService {
 
   //ask user login, give user 3 attempts to type correct password.
   @Nullable
+  @Deprecated
+  //TODO: rework to be part of the client handler
   public User authorize() throws IOException {
     System.out.println("Authorization started.");
     System.out.println("Type your login:");
@@ -124,6 +134,8 @@ public class AuthorisationService {
   }
 
   @Nullable
+  @Deprecated
+  //TODO: rework to be part of the client handler
   public User authorize(@NotNull String login) throws IOException {
     User user = userStorage.findUserByLogin(login);
     if (user != null) {
@@ -170,6 +182,8 @@ public class AuthorisationService {
 
   //if there is a console - tries to readPassword (without echoing), otherwise read normally
   @NotNull
+  @Deprecated
+  //TODO: rework to be part of the client handler
   private String safePassRead() throws IOException {
     if (System.console() != null) {
       return new String(System.console().readPassword());

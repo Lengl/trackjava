@@ -20,7 +20,7 @@ public class ThreadedServer implements MessageListener {
   public static final int PORT = 8123;
   private final Logger log = Logger.getLogger(ThreadedServer.class.getName());
   private ServerSocket sSocket;
-  private boolean isRunning;
+  private volatile boolean isRunning;
   private Map<Long, ConnectionHandler> handlers = new HashMap<>();
   private Map<Long, Thread> handlerThreads = new HashMap<>();
   private Map<Long, InputHandler> inputHandlers = new HashMap<>();
@@ -78,26 +78,42 @@ public class ThreadedServer implements MessageListener {
     }
   }
 
+  private void closeConnection(long id) {
+    handlers.remove(id);
+    inputHandlers.remove(id);
+    handlerThreads.get(id).interrupt();
+    handlerThreads.remove(id);
+    log.info("Connection " + id + "closed.");
+  }
+
   @Override
   public void onMessage(Message message) {
-    try {
-      String ret = inputHandlers.get(message.getSenderId()).react(message.getBody());
-      if (ret != null) {
-        handlers.get(message.getSenderId()).send(new Message(ret));
-        //TODO: Get rid of duplicated check
-        if ("/quit".equals(message.getBody().trim()) || "/q".equals(message.getBody().trim())) {
-          handlers.remove(message.getSenderId());
-          handlerThreads.get(message.getSenderId()).interrupt();
-          handlerThreads.remove(message.getSenderId());
-        }
-      } else {
-        message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
-        for (ConnectionHandler handler : handlers.values()) {
+    long id = message.getSenderId();
+    String ret = inputHandlers.get(id).react(message.getBody());
+    if (ret != null) {
+
+      try {
+        handlers.get(id).send(new Message(ret));
+      } catch (IOException e) {
+        log.log(Level.SEVERE, "Unable to send message", e);
+        closeConnection(id);
+      }
+
+      //TODO: Get rid of duplicated check
+      if ("/quit".equals(message.getBody().trim()) || "/q".equals(message.getBody().trim())) {
+        closeConnection(id);
+      }
+
+    } else {
+      message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
+      for (ConnectionHandler handler : handlers.values()) {
+        try {
           handler.send(message);
+        } catch (IOException e) {
+          log.log(Level.SEVERE, "Unable to send message", e);
+
         }
       }
-    } catch (Exception e) {
-      log.log(Level.INFO, "Unable to send message:", e);
     }
   }
 }

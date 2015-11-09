@@ -1,12 +1,12 @@
 # Ignore my log files
-/logs
+/logs/application_log*
 
 #ignore my database
 /userStore.mystore
 /passwordStore.mystore
 
 #ignore my messages base
-/messages
+/messages/*.mystore
 
 # Windows image file caches
 *.db
