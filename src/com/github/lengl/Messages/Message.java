@@ -19,8 +19,7 @@ public class Message implements Serializable {
   }
 
   public Message(@NotNull String body) {
-    this.body = body;
-    this.time = new Timestamp(new java.util.Date().getTime());
+    this(body, new Timestamp(new java.util.Date().getTime()));
   }
 
   @NotNull
@@ -40,7 +39,7 @@ public class Message implements Serializable {
 
   @Override
   public String toString() {
-    return "Author=<" + ((author != null) ? author : "unknown") + ">" +
+    return "Author=<" + getAuthor() + ">" +
         ", Message=<" + body + ">";
   }
 
@@ -49,6 +48,8 @@ public class Message implements Serializable {
   }
 
   public String getAuthor() {
+    if (author == null)
+      return "unknownUser" + senderId;
     return author;
   }
 

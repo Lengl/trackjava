@@ -10,14 +10,17 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+import static java.lang.Thread.sleep;
+
 public class ThreadedClient implements MessageListener {
 
   public static final int PORT = 8123;
   public static final String HOST = "localhost";
   private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
-  ConnectionHandler handler;
-  Thread socketHandlerThread;
-  volatile long myId = -1;
+  private ConnectionHandler handler;
+  private Thread socketHandlerThread;
+  private Thread inputThread;
+  private volatile long myId = -1;
 
   public ThreadedClient() {
     try {
@@ -28,6 +31,8 @@ public class ThreadedClient implements MessageListener {
 
       socketHandlerThread = new Thread(handler);
       socketHandlerThread.start();
+
+      inputThread = Thread.currentThread();
     } catch (UnknownHostException e) {
       log.log(Level.SEVERE, "Unknown host: ", e);
       System.err.println("Host exception. Restart the client");
@@ -39,7 +44,7 @@ public class ThreadedClient implements MessageListener {
     }
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     try {
       LogManager.getLogManager().readConfiguration(
           ThreadedClient.class.getResourceAsStream("/logging.properties"));
@@ -51,9 +56,17 @@ public class ThreadedClient implements MessageListener {
 
     Scanner scanner = new Scanner(System.in);
     System.out.println("Waiting for connection...");
-    while (client.myId == -1);
-    System.out.println("Connected.");
-    while (true) {
+    //Wait one minute for connection
+    try {
+      sleep(60000);
+      System.err.println("Server not responding. Restart the client.");
+      client.log.log(Level.SEVERE, "No response from server in one minute");
+      client.close();
+      System.exit(0);
+    } catch (InterruptedException e) {
+      System.out.println("Connected.");
+    }
+    while (!Thread.currentThread().isInterrupted()) {
       String input = scanner.nextLine();
       client.processInput(input);
       if ("/q".equals(input) || "/quit".equals(input)) {
@@ -63,10 +76,14 @@ public class ThreadedClient implements MessageListener {
     }
   }
 
-  public void processInput(String line) throws IOException {
+  public void processInput(String line) {
     Message msg = new Message(line);
     msg.setSenderId(myId);
-    handler.send(msg);
+    try {
+      handler.send(msg);
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "Unable to send message: ", e);
+    }
   }
 
   @Override
@@ -74,15 +91,19 @@ public class ThreadedClient implements MessageListener {
     if (myId == -1) {
       try {
         myId = Long.parseLong(message.getBody());
+        inputThread.interrupt();
       } catch (NumberFormatException e) {
         //This is something REALLY unexpected
         //Because first message we get from server should be our ID.
         log.log(Level.SEVERE, "First message wasn't the ID!");
         System.err.println("Unexpected problems. Restart the client");
-        System.exit(0);
       }
     } else {
       System.out.printf("%s: %s\n", message.getAuthor(), message.getBody());
     }
+  }
+
+  public void close() {
+    socketHandlerThread.interrupt();
   }
 }

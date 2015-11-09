@@ -93,7 +93,9 @@ public class ThreadedServer implements MessageListener {
     if (ret != null) {
 
       try {
-        handlers.get(id).send(new Message(ret));
+        Message response = new Message(ret);
+        response.setAuthor("server");
+        handlers.get(id).send(response);
       } catch (IOException e) {
         log.log(Level.SEVERE, "Unable to send message", e);
         closeConnection(id);
@@ -107,12 +109,13 @@ public class ThreadedServer implements MessageListener {
     } else {
       message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
       for (ConnectionHandler handler : handlers.values()) {
+
         try {
           handler.send(message);
         } catch (IOException e) {
           log.log(Level.SEVERE, "Unable to send message", e);
-
         }
+
       }
     }
   }
