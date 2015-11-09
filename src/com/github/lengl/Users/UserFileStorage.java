@@ -15,15 +15,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class UserStorage implements UserStorable {
+public class UserFileStorage implements UserStorable {
   private final static String SEPARATOR = ";";
-  private final Logger log = Logger.getLogger(UserStorage.class.getName());
+  private final Logger log = Logger.getLogger(UserFileStorage.class.getName());
   private final Map<String, User> loginUserMap = new HashMap<>();
   private final Map<Long, User> idUserMap = new HashMap<>();
   private final BufferedWriter storeWriter;
   private long lastId = 1;
 
-  public UserStorage(@NotNull String filename) throws IOException {
+  public UserFileStorage(@NotNull String filename) throws IOException {
     Path path = FileSystems.getDefault().getPath(filename);
     if (Files.notExists(path)) {
       Files.createFile(path);
@@ -49,17 +49,18 @@ public class UserStorage implements UserStorable {
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
-  public UserStorage() throws IOException {
+  public UserFileStorage() throws IOException {
     this("userStore.mystore");
   }
 
   @Override
   @NotNull
-  public User create(@NotNull String login) {
+  public User create(@NotNull String login) throws IOException {
     long id = ++lastId;
     User user = new User(login, id);
     loginUserMap.put(login, user);
     idUserMap.put(id, user);
+    storeWriter.write(id + SEPARATOR + login);
     return user;
   }
 

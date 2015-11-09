@@ -2,7 +2,6 @@ package com.github.lengl.Authorization;
 
 import com.github.lengl.Users.User;
 import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
 

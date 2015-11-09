@@ -1,8 +1,8 @@
 package com.github.lengl.Authorization;
 
 import com.github.lengl.Users.User;
+import com.github.lengl.Users.UserFileStorage;
 import com.github.lengl.Users.UserStorable;
-import com.github.lengl.Users.UserStorage;
 import com.sun.istack.internal.NotNull;
 
 import java.io.BufferedReader;
@@ -19,14 +19,14 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class PasswordStorage implements PasswordStorable {
+public class PasswordFileStorage implements PasswordStorable {
   private final String SEPARATOR = ";";
-  private final Logger log = Logger.getLogger(PasswordStorage.class.getName());
+  private final Logger log = Logger.getLogger(PasswordFileStorage.class.getName());
   private final MessageDigest messageDigest;
   private final Map<User, String> passMap = new HashMap<>();
   private final BufferedWriter storeWriter;
 
-  public PasswordStorage(@NotNull String filename, @NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage(@NotNull String filename, @NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
     Path path = FileSystems.getDefault().getPath(filename);
     if (Files.notExists(path)) {
       Files.createFile(path);
@@ -47,16 +47,16 @@ public class PasswordStorage implements PasswordStorable {
     messageDigest = MessageDigest.getInstance("SHA1");
   }
 
-  public PasswordStorage(@NotNull String filename) throws IOException, NoSuchAlgorithmException {
-    this(filename, new UserStorage());
+  public PasswordFileStorage(@NotNull String filename) throws IOException, NoSuchAlgorithmException {
+    this(filename, new UserFileStorage());
   }
 
-  public PasswordStorage(@NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage(@NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
     this("passwordStore.mystore", userStore);
   }
 
-  public PasswordStorage() throws IOException, NoSuchAlgorithmException {
-    this("passwordStore.mystore", new UserStorage());
+  public PasswordFileStorage() throws IOException, NoSuchAlgorithmException {
+    this("passwordStore.mystore", new UserFileStorage());
   }
 
   @NotNull

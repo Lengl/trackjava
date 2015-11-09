@@ -1,5 +1,6 @@
 package com.github.lengl.net;
 
+import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.ChatRoom.ChatRoom;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
@@ -21,11 +22,12 @@ public class ThreadedServer implements MessageListener {
   private final Logger log = Logger.getLogger(ThreadedServer.class.getName());
   private ServerSocket sSocket;
   private volatile boolean isRunning;
-  private Map<Long, ConnectionHandler> handlers = new HashMap<>();
-  private Map<Long, Thread> handlerThreads = new HashMap<>();
-  private Map<Long, InputHandler> inputHandlers = new HashMap<>();
+  private final Map<Long, ConnectionHandler> handlers = new HashMap<>();
+  private final Map<Long, Thread> handlerThreads = new HashMap<>();
+  private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
   private Map<Long, ChatRoom> chatRooms = new HashMap<>();
-  private AtomicLong internalCounterID = new AtomicLong(0);
+  private final AtomicLong internalCounterID = new AtomicLong(0);
+  private AuthorisationService authorisationService;
 
   public ThreadedServer() {
     try {
@@ -59,6 +61,8 @@ public class ThreadedServer implements MessageListener {
       ConnectionHandler handler = new SocketConnectionHandler(socket);
       handler.addListener(this);
 
+      authorisationService = new AuthorisationService();
+
       long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
       inputHandlers.put(senderId, new MessageService());
@@ -73,9 +77,8 @@ public class ThreadedServer implements MessageListener {
 
   public void stopServer() {
     isRunning = false;
-    for (ConnectionHandler handler : handlers.values()) {
-      handler.stop();
-    }
+    handlers.values().forEach(com.github.lengl.net.ConnectionHandler::stop);
+    authorisationService.stop();
   }
 
   private void closeConnection(long id) {

@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 
 public class SocketConnectionHandler implements ConnectionHandler {
   private final Logger log = Logger.getLogger(SocketConnectionHandler.class.getName());
-  private List<MessageListener> listeners = new ArrayList<>();
-  private Socket socket;
+  private final List<MessageListener> listeners = new ArrayList<>();
+  private final Socket socket;
   private ObjectOutputStream out;
   private ObjectInputStream in;
 

@@ -16,29 +16,19 @@ import java.util.regex.PatternSyntaxException;
 
 public class MessageService implements InputHandler {
 
+  private static final String UNAUTHORIZED =
+      "You need to authorise (/login) or to register (/signin) yourself to use this command.";
   private final Logger log = Logger.getLogger(MessageService.class.getName());
   private final AuthorisationService authorisationService;
-  private MessageStorable historyStorage;
-  private User authorizedUser;
+  private MessageStorable historyStorage = null;
+  private User authorizedUser = null;
 
-  public MessageService(@NotNull User user, @NotNull MessageStorable storage) throws IOException, NoSuchAlgorithmException {
-    authorisationService = new AuthorisationService();
-    historyStorage = storage;
-    authorizedUser = user;
-  }
-
-  public MessageService(@Nullable User user) throws IOException, NoSuchAlgorithmException {
-    if (user != null) {
-      historyStorage = new MessageStorage(user);
-    } else {
-      historyStorage = null;
-    }
-    authorisationService = new AuthorisationService();
-    authorizedUser = user;
+  public MessageService(@NotNull AuthorisationService authorisationService) {
+    this.authorisationService = authorisationService;
   }
 
   public MessageService() throws IOException, NoSuchAlgorithmException {
-    this(null);
+    this(new AuthorisationService());
   }
 
   @Nullable
@@ -52,10 +42,16 @@ public class MessageService implements InputHandler {
         return handleLogin(trimmed);
       }
 
+      //sign in
+      if (trimmed.startsWith("/signin")) {
+        return handleSignin(trimmed);
+      }
+
       //print help message
       if ("/help".equals(trimmed)) {
         return "/help\n" +
-            "/login <your login>\n" +
+            "/login <login> <password>\n" +
+            "/signin <login> <password>" +
             "/user <nickname>\n" +
             "/history <amount>\n" +
             "/quit";
@@ -95,6 +91,21 @@ public class MessageService implements InputHandler {
     return authorizedUser.getNickname();
   }
 
+  @NotNull
+  private String handleSignin(@NotNull String trimmed) {
+    int OFFSET = 7; //length of string /signin
+    String userAndPwd = trimmed.substring(OFFSET).trim();
+    String[] parsed = userAndPwd.trim().split(" ", 2);
+    if (parsed.length == 1) {
+      return "Usage: /signin <your login> <your password>";
+    }
+    AuthorisationServiceResponse response = authorisationService.createNewUserAndAuthorise(parsed[0], parsed[1]);
+    if (response.user != null)
+      authorizedUser = response.user;
+    return response.response;
+  }
+
+  @NotNull
   private String handleLogin(@NotNull String trimmed) {
     int OFFSET = 6; //length of string "/login"
     String userAndPwd = trimmed.substring(OFFSET).trim();
@@ -115,6 +126,7 @@ public class MessageService implements InputHandler {
     }
   }
 
+  @NotNull
   private String handleNickname(@NotNull String trimmed) {
     //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
     int OFFSET = 5; //length of string "/user"
@@ -122,10 +134,11 @@ public class MessageService implements InputHandler {
       authorizedUser.setNickname(trimmed.substring(OFFSET).trim());
       return "Username " + trimmed.substring(OFFSET).trim() + " set successfully.";
     } else {
-      return "You need to be authorized (/login) to use this command.";
+      return UNAUTHORIZED;
     }
   }
 
+  @NotNull
   private String handleHistory(@NotNull String trimmed) {
     int OFFSET = 8; //length of string "/history"
     if (authorizedUser != null) {
@@ -142,10 +155,11 @@ public class MessageService implements InputHandler {
       }
       return history;
     } else {
-      return "You need to be authorized (/login) to use this command.";
+      return UNAUTHORIZED;
     }
   }
 
+  @NotNull
   private String handleFind(@NotNull String trimmed) {
     int OFFSET = 5; //length of string "/find"
     if (authorizedUser != null) {
@@ -158,12 +172,12 @@ public class MessageService implements InputHandler {
         return "Invalid regular expression";
       }
     } else {
-      return "You need to be authorized (/login) to use this command.";
+      return UNAUTHORIZED;
     }
   }
 
   public void stop() {
-    authorisationService.stopAuthorizationClient();
+    authorisationService.stop();
     historyStorage.close();
   }
 }
