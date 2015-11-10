@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 public class Message implements Serializable {
   private long id;
   private long senderId;
-  private long chatId;
+  private long chatId = -1;
   private String author;
   private final String body;
   private final Timestamp time;
@@ -20,6 +20,12 @@ public class Message implements Serializable {
 
   public Message(@NotNull String body) {
     this(body, new Timestamp(new java.util.Date().getTime()));
+  }
+
+  public Message(@NotNull String body, @NotNull String author) {
+    this.body = body;
+    this.author = author;
+    this.time = new Timestamp(new java.util.Date().getTime());
   }
 
   @NotNull
@@ -35,6 +41,14 @@ public class Message implements Serializable {
   @NotNull
   public long getSenderId() {
     return senderId;
+  }
+
+  public long getChatId() {
+    return chatId;
+  }
+
+  public void setChatId(long chatId) {
+    this.chatId = chatId;
   }
 
   @Override

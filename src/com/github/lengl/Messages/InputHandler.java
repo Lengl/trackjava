@@ -5,8 +5,5 @@ import com.sun.istack.internal.Nullable;
 
 public interface InputHandler {
   @Nullable
-  String react(@NotNull String input);
-
-  @Nullable
-  String getAuthor();
+  Message react(@NotNull String input);
 }

@@ -8,7 +8,6 @@ import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -32,63 +31,58 @@ public class MessageService implements InputHandler {
   }
 
   @Nullable
-  public String react(@NotNull String input) {
-    Timestamp sendTime = new Timestamp(new java.util.Date().getTime());
+  public Message react(@NotNull String input) {
     String trimmed = input.trim();
+    //this means return will be server response and has no author.
     if (trimmed.startsWith("/")) {
       //login as smone
       //TODO: Rework authorisation cycle
       if (trimmed.startsWith("/login")) {
-        return handleLogin(trimmed);
+        return new Message(handleLogin(trimmed), "server");
       }
 
       //sign in
       if (trimmed.startsWith("/signin")) {
-        return handleSignin(trimmed);
+        return new Message(handleSignin(trimmed), "server");
       }
 
       //print help message
       if ("/help".equals(trimmed)) {
-        return "/help\n" +
+        return new Message(
+            "/help\n" +
             "/login <login> <password>\n" +
             "/signin <login> <password>" +
             "/user <nickname>\n" +
             "/history <amount>\n" +
-            "/quit";
+            "/quit", "server");
       }
 
       //change user nickname
       if (trimmed.startsWith("/user")) {
-        return handleNickname(trimmed);
+        return new Message(handleNickname(trimmed), "server");
       }
 
       //print user's message history
       if (trimmed.startsWith("/history")) {
-        return handleHistory(trimmed);
+        return new Message(handleHistory(trimmed), "server");
       }
 
       //find messages matching regex
       if (trimmed.startsWith("/find")) {
-        return handleFind(trimmed);
+        return new Message(handleFind(trimmed), "server");
       }
 
       //finish sending messages
       if ("/q".equals(trimmed) || "/quit".equals(trimmed)) {
-        return "Goodbye!";
+        return new Message("Goodbye!", "server");
       }
     }
+    //This means we received general message
+    Message ret = new Message(input, authorizedUser.getNickname());
     if (historyStorage != null) {
-      historyStorage.addMessage(new Message(input, sendTime));
+      historyStorage.addMessage(ret);
     }
-    //This null should mean everything is correct and we should just send message to everyone.
-    return null;
-  }
-
-  @Override
-  public String getAuthor() {
-    if (authorizedUser == null)
-      return null;
-    return authorizedUser.getNickname();
+    return ret;
   }
 
   @NotNull
@@ -117,7 +111,7 @@ public class MessageService implements InputHandler {
       AuthorisationServiceResponse response = authorisationService.authorize(parsed[0], parsed[1]);
       if (response.user != null) {
         authorizedUser = response.user;
-        historyStorage = new MessageStorage(authorizedUser);
+        historyStorage = new MessageFileStorage(authorizedUser);
       }
       return response.response;
     } catch (IOException e) {

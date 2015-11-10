@@ -20,16 +20,16 @@ import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MessageStorage implements MessageStorable {
+public class MessageFileStorage implements MessageStorable {
 
   private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
   private final String SEPARATOR = ";";
   private final String STOREFOLDER = "messages/";
   private final BufferedWriter storeWriter;
-  private final Logger log = Logger.getLogger(MessageStorage.class.getName());
+  private final Logger log = Logger.getLogger(MessageFileStorage.class.getName());
   private final List<Message> messageHistory = new ArrayList<>();
 
-  public MessageStorage(@NotNull User user) throws IOException {
+  public MessageFileStorage(@NotNull User user) throws IOException {
     Path path = FileSystems.getDefault().getPath(STOREFOLDER + user.getLogin() + ".mystore");
     if (Files.notExists(path)) {
       Files.createFile(path);
@@ -54,7 +54,7 @@ public class MessageStorage implements MessageStorable {
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
   }
 
-  public MessageStorage(long chatId) throws IOException {
+  public MessageFileStorage(long chatId) throws IOException {
     Path path = FileSystems.getDefault().getPath(STOREFOLDER + "chat" + chatId + ".mystore");
     if (Files.notExists(path)) {
       Files.createFile(path);

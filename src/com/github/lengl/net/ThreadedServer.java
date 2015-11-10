@@ -24,6 +24,10 @@ public class ThreadedServer implements MessageListener {
   private volatile boolean isRunning;
   private final Map<Long, ConnectionHandler> handlers = new HashMap<>();
   private final Map<Long, Thread> handlerThreads = new HashMap<>();
+  //Map <author, handlerId>
+  //TODO: Consider, how and WHEN get this information
+  private final Map<String, Long> authorisedHandlers = new HashMap<>();
+  //Map <handlerId, handler>
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
   private Map<Long, ChatRoom> chatRooms = new HashMap<>();
   private final AtomicLong internalCounterID = new AtomicLong(0);
@@ -92,13 +96,10 @@ public class ThreadedServer implements MessageListener {
   @Override
   public void onMessage(Message message) {
     long id = message.getSenderId();
-    String ret = inputHandlers.get(id).react(message.getBody());
-    if (ret != null) {
-
+    Message ret = inputHandlers.get(id).react(message.getBody());
+    if ("server".equals(ret.getAuthor())) {
       try {
-        Message response = new Message(ret);
-        response.setAuthor("server");
-        handlers.get(id).send(response);
+        handlers.get(id).send(ret);
       } catch (IOException e) {
         log.log(Level.SEVERE, "Unable to send message", e);
         closeConnection(id);
@@ -110,7 +111,6 @@ public class ThreadedServer implements MessageListener {
       }
 
     } else {
-      message.setAuthor(inputHandlers.get(message.getSenderId()).getAuthor());
       for (ConnectionHandler handler : handlers.values()) {
 
         try {

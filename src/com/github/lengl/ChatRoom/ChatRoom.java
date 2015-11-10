@@ -1,7 +1,7 @@
 package com.github.lengl.ChatRoom;
 
 import com.github.lengl.Messages.MessageStorable;
-import com.github.lengl.Messages.MessageStorage;
+import com.github.lengl.Messages.MessageFileStorage;
 import com.github.lengl.Users.User;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ public class ChatRoom {
 
   public ChatRoom(long id) throws IOException {
     this.id = id;
-    this.messageStorage = new MessageStorage(id);
+    this.messageStorage = new MessageFileStorage(id);
   }
 
   public void addParticipant(User user) {
