@@ -21,6 +21,11 @@ public class AuthorisationService {
     this.passwordStorage = new PasswordFileStorage(userStorage);
   }
 
+  public AuthorisationService(UserStorable userStorage, PasswordStorable passwordStorage) {
+    this.userStorage = userStorage;
+    this.passwordStorage = passwordStorage;
+  }
+
   //ask user to type his password twice, compare them, create user and add his password to store
   @NotNull
   public AuthorisationServiceResponse createNewUserAndAuthorise(@NotNull String login, @NotNull String password) {

@@ -3,7 +3,7 @@
 
 #ignore my database
 /userStore.mystore
-/src/com/github/lengl/Tester.java
+/com/github/lengl/Tester.java
 /passwordStore.mystore
 
 #ignore my messages base

@@ -4,6 +4,7 @@ import com.sun.istack.internal.NotNull;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.Objects;
 
 public class Message implements Serializable {
   private long id;
@@ -69,5 +70,22 @@ public class Message implements Serializable {
 
   public void setAuthor(String author) {
     this.author = author;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Message message = (Message) o;
+    return Objects.equals(id, message.id) &&
+        Objects.equals(senderId, message.senderId) &&
+        Objects.equals(chatId, message.chatId) &&
+        Objects.equals(author, message.author) &&
+        Objects.equals(body, message.body);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, senderId, chatId, author, body);
   }
 }
