@@ -4,13 +4,19 @@ import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.ChatRoom.ChatRoom;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
-import com.github.lengl.Messages.MessageService;
+import com.github.lengl.Messages.ServerMessageService;
+import com.github.lengl.Messages.ServerMessages.AuthMessage;
+import com.github.lengl.Messages.ServerMessages.ChatCreatedMessage;
+import com.github.lengl.Messages.ServerMessages.QuitMessage;
+import com.github.lengl.Messages.ServerMessages.ResponseMessage;
+import com.github.lengl.Users.User;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -22,14 +28,16 @@ public class ThreadedServer implements MessageListener {
   private final Logger log = Logger.getLogger(ThreadedServer.class.getName());
   private ServerSocket sSocket;
   private volatile boolean isRunning;
+
   private final Map<Long, ConnectionHandler> handlers = new HashMap<>();
   private final Map<Long, Thread> handlerThreads = new HashMap<>();
-  //Map <author, handlerId>
-  //TODO: Consider, how and WHEN get this information
-  private final Map<String, Long> authorisedHandlers = new HashMap<>();
+
+  //Map <authorizedUser, handlerId>
+  private final Map<User, Long> authorisedHandlers = new HashMap<>();
   //Map <handlerId, handler>
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
   private Map<Long, ChatRoom> chatRooms = new HashMap<>();
+
   private final AtomicLong internalCounterID = new AtomicLong(0);
   private AuthorisationService authorisationService;
 
@@ -69,7 +77,7 @@ public class ThreadedServer implements MessageListener {
 
       long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
-      inputHandlers.put(senderId, new MessageService());
+      inputHandlers.put(senderId, new ServerMessageService(authorisationService));
       Thread thread = new Thread(handler);
       thread.start();
       handlerThreads.put(senderId, thread);
@@ -81,13 +89,17 @@ public class ThreadedServer implements MessageListener {
 
   public void stopServer() {
     isRunning = false;
-    handlers.values().forEach(com.github.lengl.net.ConnectionHandler::stop);
-    authorisationService.stop();
+    Set<Long> keys = handlers.keySet();
+    keys.forEach(key -> closeConnection(key));
+    if (authorisationService != null) {
+      authorisationService.stop();
+    }
   }
 
   private void closeConnection(long id) {
     handlers.remove(id);
     inputHandlers.remove(id);
+    authorisedHandlers.values().remove(id);
     handlerThreads.get(id).interrupt();
     handlerThreads.remove(id);
     log.info("Connection " + id + "closed.");
@@ -95,31 +107,66 @@ public class ThreadedServer implements MessageListener {
 
   @Override
   public void onMessage(Message message) {
+    //This message from client has: id, senderId, body, time
     long id = message.getSenderId();
-    Message ret = inputHandlers.get(id).react(message.getBody());
-    if ("server".equals(ret.getAuthor())) {
+    Message ret = inputHandlers.get(id).react(message);
+    if (ret instanceof ResponseMessage) {
       try {
+
         handlers.get(id).send(ret);
+
+        if (ret instanceof QuitMessage) {
+          closeConnection(id);
+        }
+        if (ret instanceof AuthMessage) {
+          authorisedHandlers.values().remove(id);
+          authorisedHandlers.put(((AuthMessage) ret).getAuthorized(), id);
+        }
+        if (ret instanceof ChatCreatedMessage) {
+          ChatRoom room = ((ChatCreatedMessage) ret).getCreatedRoom();
+          chatRooms.put(room.getId(), room);
+        }
+
       } catch (IOException e) {
         log.log(Level.SEVERE, "Unable to send message", e);
         closeConnection(id);
       }
-
-      //TODO: Get rid of duplicated check
-      if ("/quit".equals(message.getBody().trim()) || "/q".equals(message.getBody().trim())) {
-        closeConnection(id);
-      }
-
     } else {
-      for (ConnectionHandler handler : handlers.values()) {
+      if (message.getChatId() == -1) {
 
-        try {
-          handler.send(message);
-        } catch (IOException e) {
-          log.log(Level.SEVERE, "Unable to send message", e);
+        for (ConnectionHandler handler : handlers.values()) {
+          try {
+            handler.send(message);
+          } catch (IOException e) {
+            log.log(Level.SEVERE, "Unable to send message", e);
+          }
         }
 
+      } else {
+        ChatRoom room = chatRooms.get(message.getChatId());
+        if (room != null) {
+          Set<User> participants = room.getParticipants();
+          participants.forEach(participant -> {
+            Long handlerId = authorisedHandlers.get(participant);
+            if (handlerId != null) {
+              try {
+                handlers.get(handlerId).send(message);
+              } catch (IOException e) {
+                log.log(Level.SEVERE, "Unable to send message", e);
+                closeConnection(id);
+              }
+            }
+          });
+        } else {
+          try {
+            handlers.get(id).send(new ResponseMessage("Chat doesn't exist"));
+          } catch (IOException e) {
+            log.log(Level.SEVERE, "Unable to send message", e);
+            closeConnection(id);
+          }
+        }
       }
     }
   }
+
 }

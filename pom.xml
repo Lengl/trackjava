@@ -38,7 +38,7 @@
             </activation>
             <build>
                 <plugins>
-                    <plugin>
+                    <!--<plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.4.0</version>
@@ -52,7 +52,7 @@
                                 </argument>
                             </arguments>
                         </configuration>
-                    </plugin>
+                    </plugin>-->
                 </plugins>
             </build>
         </profile>
@@ -65,7 +65,7 @@
             </activation>
             <build>
                 <plugins>
-                    <plugin>
+                   <!-- <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.4.0</version>
@@ -79,7 +79,7 @@
                                 </argument>
                             </arguments>
                         </configuration>
-                    </plugin>
+                    </plugin>-->
                 </plugins>
             </build>
         </profile>
@@ -101,7 +101,7 @@
         <dependency>
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc</artifactId>
-            <version>14</version>
+            <version>6</version>
             <scope>system</scope>
             <systemPath>${basedir}/lib/ojdbc6.jar</systemPath>
             <!-- must match file name -->

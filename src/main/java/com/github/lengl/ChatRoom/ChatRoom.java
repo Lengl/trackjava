@@ -1,19 +1,21 @@
 package com.github.lengl.ChatRoom;
 
-import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Messages.MessageFileStorage;
+import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Users.User;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ChatRoom {
+  private static volatile long idCounter = 0;
   private final long id;
-  private List<User> participants;
+  private Set<User> participants = new HashSet<>();
   public final MessageStorable messageStorage;
 
-  public ChatRoom(long id) throws IOException {
-    this.id = id;
+  public ChatRoom() throws IOException {
+    this.id = idCounter++;
     this.messageStorage = new MessageFileStorage(id);
   }
 
@@ -27,5 +29,13 @@ public class ChatRoom {
 
   boolean hasParticipant(User user) {
     return participants.contains(user);
+  }
+
+  public Set<User> getParticipants() {
+    return participants;
+  }
+
+  public long getId() {
+    return id;
   }
 }

@@ -1,5 +1,7 @@
 package com.github.lengl.net;
 
+import com.github.lengl.Messages.ClientMessageService;
+import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
 
 import java.io.IOException;
@@ -21,6 +23,7 @@ public class ThreadedClient implements MessageListener {
   private Thread socketHandlerThread;
   private Thread inputThread;
   private volatile long myId = -1;
+  private InputHandler inputHandler;
 
   public ThreadedClient() {
     try {
@@ -33,6 +36,8 @@ public class ThreadedClient implements MessageListener {
       socketHandlerThread.start();
 
       inputThread = Thread.currentThread();
+
+      inputHandler = new ClientMessageService();
     } catch (UnknownHostException e) {
       log.log(Level.SEVERE, "Unknown host: ", e);
       System.err.println("Host exception. Restart the client");
@@ -79,10 +84,13 @@ public class ThreadedClient implements MessageListener {
   public void processInput(String line) {
     Message msg = new Message(line);
     msg.setSenderId(myId);
-    try {
-      handler.send(msg);
-    } catch (IOException e) {
-      log.log(Level.SEVERE, "Unable to send message: ", e);
+    msg = inputHandler.react(msg);
+    if (msg != null) {
+      try {
+        handler.send(msg);
+      } catch (IOException e) {
+        log.log(Level.SEVERE, "Unable to send message: ", e);
+      }
     }
   }
 

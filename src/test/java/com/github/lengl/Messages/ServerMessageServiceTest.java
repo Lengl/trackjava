@@ -11,10 +11,10 @@ import org.mockito.Mockito;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
-public class MessageServiceTest {
+public class ServerMessageServiceTest {
   UserStorable userStore;
   PasswordStorable passwordStore;
-  MessageService messageService;
+  ServerMessageService serverMessageService;
   User defaultUser = new User("Greener", 1);
 
   @Before
@@ -25,12 +25,12 @@ public class MessageServiceTest {
     when(userStore.findUserByLogin("Black")).thenReturn(null);
     when(passwordStore.check(defaultUser, "strongpass")).thenReturn(true);
     when(passwordStore.check(defaultUser, "weakpass")).thenReturn(false);
-    messageService = new MessageService(new AuthorisationService(userStore, passwordStore));
+    serverMessageService = new ServerMessageService(new AuthorisationService(userStore, passwordStore));
   }
 
   @Test
   public void successLogin(){
-    Message react = messageService.react("/login Greener strongpass");
+    Message react = serverMessageService.react(new Message("/login Greener strongpass"));
     Message expect = new Message("Authorised successfully", "server");
     assertTrue(expect.equals(react));
   }
@@ -38,14 +38,14 @@ public class MessageServiceTest {
   @Test
   public void wrongPass() {
     Message expect = new Message("Incorrect password", "server");
-    Message react = messageService.react("/login Greener weakpass");
+    Message react = serverMessageService.react(new Message("/login Greener weakpass"));
     assertTrue(expect.equals(react));
   }
 
   @Test
   public void noUser() {
     Message expect = new Message("There is no user with this login.", "server");
-    Message react = messageService.react("/login Black mypass");
+    Message react = serverMessageService.react(new Message("/login Black mypass"));
     assertTrue(expect.equals(react));
   }
   

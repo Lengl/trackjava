@@ -1,20 +1,23 @@
 package com.github.lengl.Messages;
 
 import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Objects;
 
 public class Message implements Serializable {
+  private static volatile long idCounter = 0;
   private long id;
   private long senderId;
   private long chatId = -1;
   private String author;
-  private final String body;
-  private final Timestamp time;
+  private String body;
+  private Timestamp time;
 
   public Message(@NotNull String body, @NotNull Timestamp time) {
+    this.id = idCounter++;
     this.body = body;
     this.time = time;
   }
@@ -24,6 +27,7 @@ public class Message implements Serializable {
   }
 
   public Message(@NotNull String body, @NotNull String author) {
+    this.id = idCounter++;
     this.body = body;
     this.author = author;
     this.time = new Timestamp(new java.util.Date().getTime());
@@ -32,6 +36,11 @@ public class Message implements Serializable {
   @NotNull
   public String getBody() {
     return body;
+  }
+
+  public void setBody(String body) {
+    this.body = body;
+    this.time = new Timestamp(new java.util.Date().getTime());
   }
 
   @NotNull
@@ -62,9 +71,8 @@ public class Message implements Serializable {
     this.senderId = senderId;
   }
 
+  @Nullable
   public String getAuthor() {
-    if (author == null)
-      return "unknownUser" + senderId;
     return author;
   }
 

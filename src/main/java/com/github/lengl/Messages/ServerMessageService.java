@@ -2,87 +2,95 @@ package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.AuthorisationServiceResponse;
+import com.github.lengl.ChatRoom.ChatRoom;
+import com.github.lengl.Messages.ServerMessages.AuthMessage;
+import com.github.lengl.Messages.ServerMessages.ChatCreatedMessage;
+import com.github.lengl.Messages.ServerMessages.QuitMessage;
+import com.github.lengl.Messages.ServerMessages.ResponseMessage;
 import com.github.lengl.Users.User;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class MessageService implements InputHandler {
+public class ServerMessageService implements InputHandler {
 
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
-  private final Logger log = Logger.getLogger(MessageService.class.getName());
+  private final Logger log = Logger.getLogger(ServerMessageService.class.getName());
   private final AuthorisationService authorisationService;
   private MessageStorable historyStorage = null;
   private User authorizedUser = null;
 
-  public MessageService(@NotNull AuthorisationService authorisationService) {
+  public ServerMessageService(@NotNull AuthorisationService authorisationService) {
     this.authorisationService = authorisationService;
   }
 
-  public MessageService() throws IOException, NoSuchAlgorithmException {
-    this(new AuthorisationService());
-  }
-
   @Nullable
-  public Message react(@NotNull String input) {
-    String trimmed = input.trim();
+  public Message react(@NotNull Message message) {
+    String trimmed = message.getBody().trim();
     //this means return will be server response and has no author.
     if (trimmed.startsWith("/")) {
       //login as smone
-      //TODO: Rework authorisation cycle
       if (trimmed.startsWith("/login")) {
-        return new Message(handleLogin(trimmed), "server");
+        return new AuthMessage(handleLogin(trimmed), authorizedUser);
       }
 
       //sign in
       if (trimmed.startsWith("/signin")) {
-        return new Message(handleSignin(trimmed), "server");
+        return new AuthMessage(handleSignin(trimmed), authorizedUser);
       }
 
       //print help message
       if ("/help".equals(trimmed)) {
-        return new Message(
+        return new ResponseMessage(
             "/help\n" +
-            "/login <login> <password>\n" +
-            "/signin <login> <password>" +
-            "/user <nickname>\n" +
-            "/history <amount>\n" +
-            "/quit", "server");
+                "/login <login> <password>\n" +
+                "/signin <login> <password>" +
+                "/user <nickname>\n" +
+                "/history <amount>\n" +
+                "/quit");
       }
 
       //change user nickname
       if (trimmed.startsWith("/user")) {
-        return new Message(handleNickname(trimmed), "server");
+        return new ResponseMessage(handleNickname(trimmed));
       }
 
       //print user's message history
       if (trimmed.startsWith("/history")) {
-        return new Message(handleHistory(trimmed), "server");
+        return new ResponseMessage(handleHistory(trimmed));
       }
 
       //find messages matching regex
       if (trimmed.startsWith("/find")) {
-        return new Message(handleFind(trimmed), "server");
+        return new ResponseMessage(handleFind(trimmed));
+      }
+
+      if (trimmed.startsWith("/chat_create")) {
+        return handleChatCreate(trimmed);
       }
 
       //finish sending messages
       if ("/q".equals(trimmed) || "/quit".equals(trimmed)) {
-        return new Message("Goodbye!", "server");
+        return new QuitMessage("Goodbye!");
       }
     }
+
     //This means we received general message
-    Message ret = new Message(input, authorizedUser.getNickname());
     if (historyStorage != null) {
-      historyStorage.addMessage(ret);
+      historyStorage.addMessage(message);
     }
-    return ret;
+    if (authorizedUser != null) {
+      message.setAuthor(authorizedUser.getNickname());
+    } else {
+      message.setAuthor("unknownUser" + message.getSenderId());
+    }
+    return message;
   }
 
   @NotNull
@@ -94,9 +102,16 @@ public class MessageService implements InputHandler {
       return "Usage: /signin <your login> <your password>";
     }
     AuthorisationServiceResponse response = authorisationService.createNewUserAndAuthorise(parsed[0], parsed[1]);
-    if (response.user != null)
-      authorizedUser = response.user;
-    return response.response;
+    try {
+      if (response.user != null) {
+        authorizedUser = response.user;
+        historyStorage = new MessageFileStorage(authorizedUser);
+      }
+      return response.response;
+    } catch (IOException e) {
+      log.log(Level.SEVERE, "IOException: ", e);
+      return "Usage: /signin <your login> <your password>";
+    }
   }
 
   @NotNull
@@ -170,8 +185,41 @@ public class MessageService implements InputHandler {
     }
   }
 
+  @NotNull
+  private Message handleChatCreate(@NotNull String trimmed) {
+    if (authorizedUser != null) {
+      int OFFSET = "/chat_create".length();
+      String[] userlist = trimmed.substring(OFFSET).trim().split(",");
+      ChatRoom room;
+      try {
+        room = new ChatRoom();
+      } catch (IOException e) {
+        log.info("Chat room can not be created");
+        return new ResponseMessage("Chat room can not be created");
+      }
+      StringBuilder stringBuilder = new StringBuilder();
+      for (String userId : userlist) {
+        try {
+          User foundUser = authorisationService.userStorage.findUserById(Integer.parseInt(userId));
+          if (foundUser != null)
+            room.addParticipant(foundUser);
+          else
+            stringBuilder.append("User ").append(userId).append(" not found\n");
+        } catch (NumberFormatException ex) {
+          log.info("Wrong input parameter for chatCreate");
+          return new ResponseMessage("Usage: /chat_create <user_id>, <user_id>, ...");
+        }
+      }
+      room.addParticipant(authorizedUser);
+      stringBuilder.append("Chat ").append(room.getId()).append(" created successfully.");
+      return new ChatCreatedMessage(stringBuilder.toString(), room);
+    } else {
+      return new ResponseMessage(UNAUTHORIZED);
+    }
+  }
+
   public void stop() {
-    authorisationService.stop();
-    historyStorage.close();
+    if (historyStorage != null)
+      historyStorage.close();
   }
 }

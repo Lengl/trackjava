@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 
 public class AuthorisationService {
   private final Logger log = Logger.getLogger(AuthorisationService.class.getName());
-  private UserStorable userStorage;
+  public final UserStorable userStorage;
   private PasswordStorable passwordStorage;
 
   public AuthorisationService() throws IOException, NoSuchAlgorithmException {
