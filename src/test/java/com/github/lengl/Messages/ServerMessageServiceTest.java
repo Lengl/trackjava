@@ -18,7 +18,7 @@ public class ServerMessageServiceTest {
   User defaultUser = new User("Greener", 1);
 
   @Before
-  public void setup() {
+  public void setup() throws Exception {
     userStore = Mockito.mock(UserStorable.class);
     passwordStore = Mockito.mock(PasswordStorable.class);
     when(userStore.findUserByLogin("Greener")).thenReturn(defaultUser);

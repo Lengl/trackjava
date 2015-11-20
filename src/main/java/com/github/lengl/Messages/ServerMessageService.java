@@ -66,7 +66,7 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(handleHistory(trimmed));
       }
 
-      //find messages matching regex
+      //find Messages matching regex
       if (trimmed.startsWith("/find")) {
         return new ResponseMessage(handleFind(trimmed));
       }
@@ -75,7 +75,7 @@ public class ServerMessageService implements InputHandler {
         return handleChatCreate(trimmed);
       }
 
-      //finish sending messages
+      //finish sending Messages
       if ("/q".equals(trimmed) || "/quit".equals(trimmed)) {
         return new QuitMessage("Goodbye!");
       }
@@ -101,8 +101,8 @@ public class ServerMessageService implements InputHandler {
     if (parsed.length == 1) {
       return "Usage: /signin <your login> <your password>";
     }
-    AuthorisationServiceResponse response = authorisationService.createNewUserAndAuthorise(parsed[0], parsed[1]);
     try {
+      AuthorisationServiceResponse response = authorisationService.createNewUserAndAuthorise(parsed[0], parsed[1]);
       if (response.user != null) {
         authorizedUser = response.user;
         historyStorage = new MessageFileStorage(authorizedUser);
@@ -111,6 +111,9 @@ public class ServerMessageService implements InputHandler {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
       return "Usage: /signin <your login> <your password>";
+    } catch (Exception e) {
+      log.log(Level.SEVERE, "Exception: ", e);
+      return "Unable to sign in. Please try again later";
     }
   }
 
@@ -132,12 +135,16 @@ public class ServerMessageService implements InputHandler {
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
       return "Usage: /login <your login> <your password>";
+    } catch (Exception e) {
+      log.log(Level.SEVERE, "Exception: ", e);
+      return "Unable to login. Please try again later";
     }
   }
 
   @NotNull
   private String handleNickname(@NotNull String trimmed) {
     //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
+    //TODO: Save nickname to UserStore!!!
     int OFFSET = 5; //length of string "/user"
     if (authorizedUser != null) {
       authorizedUser.setNickname(trimmed.substring(OFFSET).trim());
@@ -208,6 +215,9 @@ public class ServerMessageService implements InputHandler {
         } catch (NumberFormatException ex) {
           log.info("Wrong input parameter for chatCreate");
           return new ResponseMessage("Usage: /chat_create <user_id>, <user_id>, ...");
+        } catch (Exception e) {
+          log.log(Level.SEVERE, "Exception: ", e);
+          return new ResponseMessage("Unable to create chat. Please try again later");
         }
       }
       room.addParticipant(authorizedUser);

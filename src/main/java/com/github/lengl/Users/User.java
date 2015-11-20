@@ -2,9 +2,11 @@ package com.github.lengl.Users;
 
 import com.sun.istack.internal.NotNull;
 
+import java.util.Objects;
+
 public class User {
-  private final long id;
-  private final String login;
+  private long id;
+  private String login;
   private String nickname;
 
   public User(String login, long id) {
@@ -29,5 +31,18 @@ public class User {
 
   public long getId() {
     return id;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    User user = (User) o;
+    return Objects.equals(id, user.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
   }
 }

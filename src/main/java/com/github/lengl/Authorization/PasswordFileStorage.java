@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -26,7 +25,7 @@ public class PasswordFileStorage implements PasswordStorable {
   private final Map<User, String> passMap = new HashMap<>();
   private final BufferedWriter storeWriter;
 
-  public PasswordFileStorage(@NotNull String filename, @NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage(@NotNull String filename, @NotNull UserStorable userStore) throws Exception {
     Path path = FileSystems.getDefault().getPath(filename);
     if (Files.notExists(path)) {
       Files.createFile(path);
@@ -47,15 +46,15 @@ public class PasswordFileStorage implements PasswordStorable {
     messageDigest = MessageDigest.getInstance("SHA1");
   }
 
-  public PasswordFileStorage(@NotNull String filename) throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage(@NotNull String filename) throws Exception {
     this(filename, new UserFileStorage());
   }
 
-  public PasswordFileStorage(@NotNull UserStorable userStore) throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage(@NotNull UserStorable userStore) throws Exception {
     this("passwordStore.mystore", userStore);
   }
 
-  public PasswordFileStorage() throws IOException, NoSuchAlgorithmException {
+  public PasswordFileStorage() throws Exception {
     this("passwordStore.mystore", new UserFileStorage());
   }
 

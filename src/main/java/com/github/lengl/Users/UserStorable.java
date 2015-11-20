@@ -3,18 +3,16 @@ package com.github.lengl.Users;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
-import java.io.IOException;
-
 public interface UserStorable {
 
   @NotNull
-  User create(@NotNull String login) throws IOException;
+  User create(@NotNull String login) throws Exception;
 
   @Nullable
-  User findUserByLogin(@NotNull String login);
+  User findUserByLogin(@NotNull String login) throws Exception;
 
   @Nullable
-  User findUserById(@NotNull long id);
+  User findUserById(@NotNull long id) throws Exception;
 
   void close();
 }

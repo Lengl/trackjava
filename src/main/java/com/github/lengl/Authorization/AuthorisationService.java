@@ -7,7 +7,6 @@ import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,7 +15,7 @@ public class AuthorisationService {
   public final UserStorable userStorage;
   private PasswordStorable passwordStorage;
 
-  public AuthorisationService() throws IOException, NoSuchAlgorithmException {
+  public AuthorisationService() throws Exception {
     this.userStorage = new UserFileStorage();
     this.passwordStorage = new PasswordFileStorage(userStorage);
   }
@@ -28,7 +27,7 @@ public class AuthorisationService {
 
   //ask user to type his password twice, compare them, create user and add his password to store
   @NotNull
-  public AuthorisationServiceResponse createNewUserAndAuthorise(@NotNull String login, @NotNull String password) {
+  public AuthorisationServiceResponse createNewUserAndAuthorise(@NotNull String login, @NotNull String password) throws Exception {
     if (userStorage.findUserByLogin(login) != null) {
       return new AuthorisationServiceResponse(null, "User already exists. Try another login.");
     } else {
@@ -44,7 +43,7 @@ public class AuthorisationService {
   }
 
   @Nullable
-  public AuthorisationServiceResponse authorize(@NotNull String login, @NotNull String password) {
+  public AuthorisationServiceResponse authorize(@NotNull String login, @NotNull String password) throws Exception {
     User user = userStorage.findUserByLogin(login);
     if (user != null) {
       if (passwordStorage.check(user, password)) {
