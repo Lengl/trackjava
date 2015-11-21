@@ -26,9 +26,10 @@ public class PasswordDBStorage implements PasswordStorable {
     args.put(1, user.getId());
     args.put(2, Encoder.encode(pass));
 
-    queryExecutor.updateQuery(
-        "INSERT INTO \"passwords\" (user_id, password) VALUES (?, ?);",
-        args);
+    queryExecutor.updateQuery("INSERT INTO \"passwords\" (user_id, password) VALUES (?, ?);", args, (r) -> {
+      //TODO: Write something that makes sence.
+      return true;
+    });
   }
 
   @Override

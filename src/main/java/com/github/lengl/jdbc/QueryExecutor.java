@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-public class QueryExecutor implements QueryExecutable{
+public class QueryExecutor implements QueryExecutable {
   private static PGPoolingDataSource source;
   private static volatile long userCounter = 0;
 
@@ -58,15 +58,20 @@ public class QueryExecutor implements QueryExecutable{
 
   // Prepared Update Query
 
-  public long updateQuery(String query, Map<Integer, Object> args) throws SQLException {
+  public <T> T updateQuery(String query, Map<Integer, Object> args, ResultHandler<T> handler) throws SQLException {
     Connection connection = source.getConnection();
-    PreparedStatement statement = connection.prepareStatement(query);
+    PreparedStatement statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
     for (Map.Entry<Integer, Object> entry : args.entrySet()) {
       statement.setObject(entry.getKey(), entry.getValue());
     }
-    long result = statement.executeUpdate(query, Statement.RETURN_GENERATED_KEYS);
+    int affectedRows = statement.executeUpdate();
+    if (affectedRows == 0)
+      throw new SQLException("Update failed, no rows affected");
+
+    T value = handler.handle(statement.getGeneratedKeys());
+    statement.close();
     connection.close();
-    return result;
+    return value;
   }
 
   public void exit() {

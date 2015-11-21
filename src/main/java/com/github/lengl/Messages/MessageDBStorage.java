@@ -27,9 +27,13 @@ public class MessageDBStorage implements MessageStorable {
     args.put(3, message.getTime());
     args.put(4, message.getBody());
 
-    queryExecutor.updateQuery(
-        "INSERT INTO \"messages\" (author_id, chat_id, time_sent, body) VALUES (?, ?, ?, ?);",
-        args);
+    queryExecutor.updateQuery("INSERT INTO \"messages\" (author_id, chat_id, time_sent, body) VALUES (?, ?, ?, ?);", args, (r) -> {
+      //TODO: Write something that makes sence
+      if(r.next()) {
+        message.setId(r.getLong(1));
+      }
+      return true;
+    });
   }
 
   @Override
@@ -81,7 +85,7 @@ public class MessageDBStorage implements MessageStorable {
     } else {
       query.append(" AND chat_id IS NULL");
     }
-    query.append("ORDER BY id");
+    query.append(" ORDER BY id");
     if (size > 0) {
       query.append(" LIMIT ?");
       args.put(argid++, size);
@@ -90,7 +94,7 @@ public class MessageDBStorage implements MessageStorable {
     return queryExecutor.execQuery(query.toString(), args, (r) -> {
       StringBuilder builder = new StringBuilder();
       while (r.next()) {
-        builder.append(r.getString("body")).append("\n");
+        builder.append("\n").append(r.getString("body"));
       }
       if (builder.length() == 0)
         return "No Matches";

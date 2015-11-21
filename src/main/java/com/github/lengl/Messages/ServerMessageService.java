@@ -39,6 +39,11 @@ public class ServerMessageService implements InputHandler {
     this.authorisationService = authorisationService;
   }
 
+  public ServerMessageService(@NotNull AuthorisationService authorisationService, @NotNull MessageStorable storage) {
+    this.authorisationService = authorisationService;
+    this.historyStorage = storage;
+  }
+
   @Nullable
   public Message react(@NotNull Message message) {
     String trimmed = message.getBody().trim();
@@ -59,6 +64,11 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(HELP);
       }
 
+      //return this user's info
+      if (trimmed.startsWith("/user_info")) {
+        return new ResponseMessage(handleUserInfo());
+      }
+
       //change user nickname
       if (trimmed.startsWith("/user")) {
         return new ResponseMessage(handleNickname(trimmed));
@@ -74,6 +84,7 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(handleFind(trimmed));
       }
 
+      //create chat
       if (trimmed.startsWith("/chat_create")) {
         return handleChatCreate(trimmed);
       }
@@ -113,7 +124,7 @@ public class ServerMessageService implements InputHandler {
       AuthorisationServiceResponse response = authorisationService.createNewUserAndAuthorise(parsed[0], parsed[1]);
       if (response.user != null) {
         authorizedUser = response.user;
-        historyStorage = new MessageFileStorage(authorizedUser);
+        //historyStorage = new MessageFileStorage(authorizedUser);
       }
       return response.response;
     } catch (IOException e) {
@@ -137,7 +148,7 @@ public class ServerMessageService implements InputHandler {
       AuthorisationServiceResponse response = authorisationService.authorize(parsed[0], parsed[1]);
       if (response.user != null) {
         authorizedUser = response.user;
-        historyStorage = new MessageFileStorage(authorizedUser);
+        //historyStorage = new MessageFileStorage(authorizedUser);
       }
       return response.response;
     } catch (IOException e) {
@@ -237,8 +248,17 @@ public class ServerMessageService implements InputHandler {
     }
   }
 
+  @NotNull
+  String handleUserInfo() {
+    if (authorizedUser != null) {
+      return authorizedUser.toString();
+    } else {
+      return UNAUTHORIZED;
+    }
+  }
+
   public void stop() {
-    if (historyStorage != null)
-      historyStorage.close();
+//    if (historyStorage != null)
+//      historyStorage.close();
   }
 }

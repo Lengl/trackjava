@@ -27,10 +27,13 @@ public class UserDBStorage implements UserStorable {
     //this one for default nickname==login
     args.put(2, login);
 
-    long id = queryExecutor.updateQuery(
-        "INSERT INTO \"users\" (login, nickname) VALUES (?, ?);",
-        args);
-    return new User(login, id);
+    return queryExecutor.updateQuery("INSERT INTO \"users\" (login, nickname) VALUES (?, ?);", args, (r) -> {
+      if (r.next()) {
+        return new User(login, r.getLong(1));
+      } else {
+        return null;
+      }
+    });
   }
 
   @Override

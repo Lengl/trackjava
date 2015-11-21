@@ -1,15 +1,19 @@
 package com.github.lengl.net;
 
 import com.github.lengl.Authorization.AuthorisationService;
+import com.github.lengl.Authorization.PasswordDBStorage;
 import com.github.lengl.ChatRoom.ChatRoom;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
+import com.github.lengl.Messages.MessageDBStorage;
+import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Messages.ServerMessageService;
 import com.github.lengl.Messages.ServerMessages.AuthMessage;
 import com.github.lengl.Messages.ServerMessages.ChatCreatedMessage;
 import com.github.lengl.Messages.ServerMessages.QuitMessage;
 import com.github.lengl.Messages.ServerMessages.ResponseMessage;
 import com.github.lengl.Users.User;
+import com.github.lengl.Users.UserDBStorage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -36,10 +40,12 @@ public class ThreadedServer implements MessageListener {
   private final Map<User, Long> authorisedHandlers = new HashMap<>();
   //Map <handlerId, handler>
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
+  //Map <chatID, chat>
   private final Map<Long, ChatRoom> chatRooms = new HashMap<>();
 
   private final AtomicLong internalCounterID = new AtomicLong(0);
   private AuthorisationService authorisationService;
+  private MessageStorable historyStorage;
 
   public ThreadedServer() {
     try {
@@ -73,11 +79,12 @@ public class ThreadedServer implements MessageListener {
       ConnectionHandler handler = new SocketConnectionHandler(socket);
       handler.addListener(this);
 
-      authorisationService = new AuthorisationService();
+      authorisationService = new AuthorisationService(new UserDBStorage(), new PasswordDBStorage());
+      historyStorage = new MessageDBStorage();
 
       long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
-      inputHandlers.put(senderId, new ServerMessageService(authorisationService));
+      inputHandlers.put(senderId, new ServerMessageService(authorisationService, historyStorage));
       Thread thread = new Thread(handler);
       thread.start();
       handlerThreads.put(senderId, thread);
@@ -87,12 +94,16 @@ public class ThreadedServer implements MessageListener {
     }
   }
 
+  //TODO: Find a way to reach this function
   public void stopServer() {
     isRunning = false;
     Set<Long> keys = handlers.keySet();
     keys.forEach(key -> closeConnection(key));
     if (authorisationService != null) {
       authorisationService.stop();
+    }
+    if (historyStorage != null) {
+      historyStorage.close();
     }
   }
 
