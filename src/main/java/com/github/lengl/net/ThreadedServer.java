@@ -36,7 +36,7 @@ public class ThreadedServer implements MessageListener {
   private final Map<User, Long> authorisedHandlers = new HashMap<>();
   //Map <handlerId, handler>
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
-  private Map<Long, ChatRoom> chatRooms = new HashMap<>();
+  private final Map<Long, ChatRoom> chatRooms = new HashMap<>();
 
   private final AtomicLong internalCounterID = new AtomicLong(0);
   private AuthorisationService authorisationService;
@@ -132,7 +132,7 @@ public class ThreadedServer implements MessageListener {
         closeConnection(id);
       }
     } else {
-      if (message.getChatId() == -1) {
+      if (message.getChatId() == null) {
 
         for (ConnectionHandler handler : handlers.values()) {
           try {

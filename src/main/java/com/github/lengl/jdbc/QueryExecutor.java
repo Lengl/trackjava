@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-public class QueryExecutor {
+public class QueryExecutor implements QueryExecutable{
   private static PGPoolingDataSource source;
   private static volatile long userCounter = 0;
 

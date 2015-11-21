@@ -6,7 +6,7 @@ import com.sun.istack.internal.Nullable;
 
 
 public class AuthMessage extends ResponseMessage {
-  private transient User authorized;
+  private final transient User authorized;
 
   public AuthMessage(@NotNull String body, @Nullable User authorized) {
     super(body);

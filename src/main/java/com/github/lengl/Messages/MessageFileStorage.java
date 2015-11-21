@@ -90,7 +90,7 @@ public class MessageFileStorage implements MessageStorable {
   }
 
   @NotNull
-  public String getHistory(int size) {
+  public String getHistory(int size, User user) {
     int mySize = size;
     if (size <= 0 || size > messageHistory.size())
       mySize = messageHistory.size();
@@ -111,8 +111,13 @@ public class MessageFileStorage implements MessageStorable {
     }
   }
 
+  @Override
+  public String getHistory(int size, User user, Long chat_id) {
+    return null;
+  }
+
   @NotNull
-  public String findMessage(@NotNull String regex) {
+  public String findMessage(@NotNull String regex, User user) {
     ListIterator<Message> msgHistoryIterator = messageHistory.listIterator(0);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
@@ -127,6 +132,11 @@ public class MessageFileStorage implements MessageStorable {
     } else {
       return buffer.toString();
     }
+  }
+
+  @Override
+  public String findMessage(String regex, User user, Long chat_id) throws Exception {
+    return null;
   }
 
   public void close() {

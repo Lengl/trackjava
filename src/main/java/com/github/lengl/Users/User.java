@@ -5,8 +5,8 @@ import com.sun.istack.internal.NotNull;
 import java.util.Objects;
 
 public class User {
-  private long id;
-  private String login;
+  private final long id;
+  private final String login;
   private String nickname;
 
   public User(String login, long id) {

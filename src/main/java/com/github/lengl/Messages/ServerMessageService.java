@@ -50,7 +50,7 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(
             "/help\n" +
                 "/login <login> <password>\n" +
-                "/signin <login> <password>" +
+                "/signin <login> <password>\n" +
                 "/user <nickname>\n" +
                 "/history <amount>\n" +
                 "/quit");
@@ -77,16 +77,21 @@ public class ServerMessageService implements InputHandler {
 
       //finish sending Messages
       if ("/q".equals(trimmed) || "/quit".equals(trimmed)) {
-        return new QuitMessage("Goodbye!");
+        return new QuitMessage();
       }
     }
 
     //This means we received general message
-    if (historyStorage != null) {
-      historyStorage.addMessage(message);
-    }
     if (authorizedUser != null) {
       message.setAuthor(authorizedUser.getNickname());
+      message.setAuthorId(authorizedUser.getId());
+      if (historyStorage != null) {
+        try {
+          historyStorage.addMessage(message);
+        } catch (Exception e) {
+          log.log(Level.SEVERE, "Adding message exception: ", e);
+        }
+      }
     } else {
       message.setAuthor("unknownUser" + message.getSenderId());
     }
@@ -159,15 +164,18 @@ public class ServerMessageService implements InputHandler {
     int OFFSET = 8; //length of string "/history"
     if (authorizedUser != null) {
       String history;
-      if ("/history".equals(trimmed)) {
-        history = historyStorage.getHistory(0);
-      } else {
-        try {
-          history = historyStorage.getHistory(Integer.parseInt(trimmed.substring(OFFSET).trim()));
-        } catch (NumberFormatException ex) {
-          log.info("Wrong input parameter caught for \"history\"");
-          return "Usage: /history <quantity> or /history";
+      try {
+        if ("/history".equals(trimmed)) {
+          history = historyStorage.getHistory(0, authorizedUser);
+        } else {
+          history = historyStorage.getHistory(Integer.parseInt(trimmed.substring(OFFSET).trim()), authorizedUser);
         }
+      } catch (NumberFormatException ex) {
+        log.info("Wrong input parameter caught for \"history\"");
+        return "Usage: /history <quantity> or /history";
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "handleHistory exception: ", e);
+        return "Unable to find messages. Please try again later";
       }
       return history;
     } else {
@@ -182,10 +190,13 @@ public class ServerMessageService implements InputHandler {
       try {
         String regex = trimmed.substring(OFFSET).trim();
         Pattern.compile(regex);
-        return historyStorage.findMessage(regex);
+        return historyStorage.findMessage(regex, authorizedUser);
       } catch (PatternSyntaxException e) {
         log.info("Wrong input parameter caught for \"find\"");
         return "Invalid regular expression";
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Exception while handleFind: ", e);
+        return "Unable to find message. Please try again later";
       }
     } else {
       return UNAUTHORIZED;
@@ -198,12 +209,7 @@ public class ServerMessageService implements InputHandler {
       int OFFSET = "/chat_create".length();
       String[] userlist = trimmed.substring(OFFSET).trim().split(",");
       ChatRoom room;
-      try {
-        room = new ChatRoom();
-      } catch (IOException e) {
-        log.info("Chat room can not be created");
-        return new ResponseMessage("Chat room can not be created");
-      }
+      room = new ChatRoom();
       StringBuilder stringBuilder = new StringBuilder();
       for (String userId : userlist) {
         try {

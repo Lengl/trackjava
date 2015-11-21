@@ -9,10 +9,11 @@ import java.util.Objects;
 
 public class Message implements Serializable {
   private static volatile long idCounter = 0;
-  private long id;
+  private final long id;
   private long senderId;
-  private long chatId = -1;
   private String author;
+  private Long authorId;
+  private Long chatId;
   private String body;
   private Timestamp time;
 
@@ -48,12 +49,13 @@ public class Message implements Serializable {
     return time;
   }
 
-  @NotNull
-  public long getSenderId() {
+  @Nullable
+  public Long getSenderId() {
     return senderId;
   }
 
-  public long getChatId() {
+  @Nullable
+  public Long getChatId() {
     return chatId;
   }
 
@@ -78,6 +80,14 @@ public class Message implements Serializable {
 
   public void setAuthor(String author) {
     this.author = author;
+  }
+
+  public long getAuthorId() {
+    return authorId;
+  }
+
+  public void setAuthorId(long authorId) {
+    this.authorId = authorId;
   }
 
   @Override
