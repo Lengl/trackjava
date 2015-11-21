@@ -18,7 +18,16 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class ServerMessageService implements InputHandler {
-
+  private static final String HELP =
+      "/help\n" +
+          "/login <login> <password>\n" +
+          "/signin <login> <password>\n" +
+          "/user <nickname>\n" +
+          "/history <amount>\n" +
+          "/find <regex>\n" +
+          "/chat_create <user_id>, <user_id>, ...\n" +
+          "/chat_send <chat_id> <message>\n" +
+          "/quit";
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
   private final Logger log = Logger.getLogger(ServerMessageService.class.getName());
@@ -47,13 +56,7 @@ public class ServerMessageService implements InputHandler {
 
       //print help message
       if ("/help".equals(trimmed)) {
-        return new ResponseMessage(
-            "/help\n" +
-                "/login <login> <password>\n" +
-                "/signin <login> <password>\n" +
-                "/user <nickname>\n" +
-                "/history <amount>\n" +
-                "/quit");
+        return new ResponseMessage(HELP);
       }
 
       //change user nickname

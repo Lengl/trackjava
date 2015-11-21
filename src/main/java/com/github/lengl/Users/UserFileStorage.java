@@ -61,6 +61,8 @@ public class UserFileStorage implements UserStorable {
     loginUserMap.put(login, user);
     idUserMap.put(id, user);
     storeWriter.write(id + SEPARATOR + login);
+    storeWriter.newLine();
+    storeWriter.flush();
     return user;
   }
 

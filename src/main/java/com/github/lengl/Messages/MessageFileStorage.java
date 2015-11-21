@@ -84,6 +84,7 @@ public class MessageFileStorage implements MessageStorable {
     try {
       storeWriter.write(message.getTime().toString() + SEPARATOR + message.getBody());
       storeWriter.newLine();
+      storeWriter.flush();
     } catch (IOException e) {
       log.log(Level.SEVERE, "IO Exception: ", e);
     }

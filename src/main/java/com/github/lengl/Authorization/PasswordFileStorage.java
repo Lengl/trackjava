@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 public class PasswordFileStorage implements PasswordStorable {
   private final String SEPARATOR = ";";
   private final Logger log = Logger.getLogger(PasswordFileStorage.class.getName());
-  private final MessageDigest messageDigest;
   private final Map<User, String> passMap = new HashMap<>();
   private final BufferedWriter storeWriter;
 
@@ -43,7 +42,6 @@ public class PasswordFileStorage implements PasswordStorable {
     fr.close();
 
     storeWriter = Files.newBufferedWriter(path, StandardOpenOption.APPEND);
-    messageDigest = MessageDigest.getInstance("SHA1");
   }
 
   public PasswordFileStorage(@NotNull String filename) throws Exception {
@@ -61,35 +59,23 @@ public class PasswordFileStorage implements PasswordStorable {
   @NotNull
   public void add(@NotNull User user, @NotNull String pass) throws IOException {
     String login = user.getLogin();
-    String encodedPass = encode(pass);
+    String encodedPass = Encoder.encode(pass);
     passMap.put(user, encodedPass);
     storeWriter.write(encodedPass + SEPARATOR + login);
     storeWriter.newLine();
-    //storeWriter.flush();
+    storeWriter.flush();
     log.info("User " + login + " added to store");
   }
 
   @NotNull
   public boolean check(User user, String pass) {
-    if (passMap.get(user).equals(encode(pass))) {
+    if (passMap.get(user).equals(Encoder.encode(pass))) {
       log.fine("User " + user.getLogin() + " password check successful");
       return true;
     } else {
       log.info("User " + user.getLogin() + " password check failed");
       return false;
     }
-  }
-
-  @NotNull
-  private String encode(String input) {
-    byte[] result = messageDigest.digest(input.getBytes());
-
-    //convert the byte to hex format
-    StringBuilder hexString = new StringBuilder();
-    for (byte resultByte : result) {
-      hexString.append(Integer.toHexString(0xFF & resultByte));
-    }
-    return hexString.toString();
   }
 
   public void close() {
