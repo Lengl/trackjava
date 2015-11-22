@@ -22,6 +22,7 @@ public class ServerMessageService implements InputHandler {
           "/login <login> <password>\n" +
           "/signin <login> <password>\n" +
           "/user <nickname>\n" +
+          "/user_info <user_id>" +
           "/history <amount>\n" +
           "/find <regex>\n" +
           "/chat_create <user_id>, <user_id>, ...\n" +
@@ -67,7 +68,7 @@ public class ServerMessageService implements InputHandler {
 
       //return this user's info
       if (trimmed.startsWith("/user_info")) {
-        return new ResponseMessage(handleUserInfo());
+        return new ResponseMessage(handleUserInfo(trimmed));
       }
 
       //change user nickname
@@ -151,7 +152,7 @@ public class ServerMessageService implements InputHandler {
       if (response.user != null) {
         authorizedUser = response.user;
         //historyStorage = new MessageFileStorage(authorizedUser);
-        ret = ret.concat("\n").concat(handleUserInfo());
+        ret = ret.concat("\n").concat(handleUserInfo(null));
       }
       return ret;
     } catch (IOException e) {
@@ -263,9 +264,25 @@ public class ServerMessageService implements InputHandler {
   }
 
   @NotNull
-  String handleUserInfo() {
+  String handleUserInfo(@Nullable String trimmed) {
     if (authorizedUser != null) {
-      return authorizedUser.toString();
+      if (trimmed == null)
+        return authorizedUser.toString();
+      try {
+        int OFFSET = "/user_info".length();
+        String num = trimmed.substring(OFFSET).trim();
+        User foundUser = authorisationService.userStorage.findUserById(Integer.parseInt(num));
+        if (foundUser != null)
+          return foundUser.toString();
+        else
+          return "User not found";
+      } catch (NumberFormatException ex) {
+        log.info("Wrong input parameter for user_info");
+        return "Usage: /user_info <user_id>";
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Handle User Info Exception: ", e);
+        return "Unable to find info";
+      }
     } else {
       return UNAUTHORIZED;
     }
