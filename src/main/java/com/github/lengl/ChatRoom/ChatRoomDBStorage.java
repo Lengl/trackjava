@@ -1,71 +1,109 @@
 package com.github.lengl.ChatRoom;
 
-import com.github.lengl.Users.User;
 import com.github.lengl.jdbc.QueryExecutable;
 import com.github.lengl.jdbc.QueryExecutor;
+import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-public class ChatRoomDBStorage {
+public class ChatRoomDBStorage implements ChatRoomStorable {
   private final QueryExecutable queryExecutor;
+
+  private final Map<Long, ChatRoom> allChats = new HashMap<>();
 
   public ChatRoomDBStorage() throws Exception {
     queryExecutor = new QueryExecutor();
     queryExecutor.initialize();
+    queryExecutor.execQuery("SELECT chat_id, participant_id FROM \"chatrooms\" as c LEFT JOIN \"chatroom_users\" as cu ON c.id = cu.chat_id;", (r) -> {
+      long chat_id = -1;
+      ChatRoom chatRoom = null;
+      while (r.next()) {
+        if (r.getLong("chat_id") != chat_id) {
+          if (chatRoom != null)
+            allChats.put(chat_id, chatRoom);
+          chat_id = r.getLong("chat_id");
+          chatRoom = new ChatRoom(r.getLong("chat_id"));
+        }
+        if (chatRoom != null) {
+          chatRoom.addParticipant(r.getLong("participant_id"));
+        }
+      }
+      if (chatRoom != null)
+        allChats.put(chat_id, chatRoom);
+      return true;
+    });
   }
 
   @Nullable
-  public ChatRoom createChatRoom() throws Exception {
+  //Returns new ChatRoom ID if successfull.
+  public Long createChatRoom() throws Exception {
     return queryExecutor.updateQuery("INSERT INTO \"chatrooms\" DEFAULT VALUES;", new HashMap<>(), (r) -> {
       if (r.next()) {
-        return new ChatRoom(r.getLong(1));
+        allChats.put(r.getLong(1), new ChatRoom(r.getLong(1)));
+        return r.getLong(1);
       } else {
         return null;
       }
     });
   }
 
-  public String addParticipant(ChatRoom room, User user) throws Exception {
-    if (!room.hasParticipant(user)) {
-      room.addParticipant(user);
-
+  @NotNull
+  public String addParticipant(Long roomId, Long userId) throws Exception {
+    ChatRoom room;
+    if (allChats.containsKey(roomId)) {
+      room = allChats.get(roomId);
+    } else {
+      return "Chat doesn't exist";
+    }
+    if (!room.hasParticipant(userId)) {
       Map<Integer, Object> args = new HashMap<>();
-      args.put(1, room.getId());
-      args.put(2, user.getId());
+      args.put(1, roomId);
+      args.put(2, userId);
 
-      return queryExecutor.execQuery("INSERT INTO \"chatroom_users\" (chat_id, participant_id) VALUES (?, ?);", args, (r) -> "User added successfully");
+      String ret = queryExecutor.updateQuery("INSERT INTO \"chatroom_users\" (chat_id, participant_id) VALUES (?, ?);", args, (r) -> "User added successfully");
+      room.addParticipant(userId);
+      return ret;
     } else {
       return "Already in this chat";
     }
   }
 
-  public String removeParticipant(ChatRoom room, User user) throws Exception {
-    if (room.hasParticipant(user)) {
-      room.removeParticipant(user);
+  @NotNull
+  public String removeParticipant(Long roomId, Long userId) throws Exception {
+    ChatRoom room;
+    if (allChats.containsKey(roomId)) {
+      room = allChats.get(roomId);
+    } else {
+      return "Chat doesn't exist";
+    }
+    if (room.hasParticipant(userId)) {
       Map<Integer, Object> args = new HashMap<>();
       args.put(1, room.getId());
-      args.put(2, user.getId());
+      args.put(2, userId);
       //TODO: Write something that makes more sence
-      return queryExecutor.execQuery("DELETE FROM \"chatroom_users\" WHERE chat_id = ? AND participant_id = ?;", args, (r) -> {
-        return "User removed successfully";
-      });
+      String ret = queryExecutor.execQuery("DELETE FROM \"chatroom_users\" WHERE chat_id = ? AND participant_id = ?;", args, (r) -> "User removed successfully");
+      room.removeParticipant(userId);
+      return ret;
     } else {
       return "User doesn't belong this chat";
     }
   }
 
-  public ChatRoom getChat(long id) throws Exception {
-    Map<Integer, Object> args = new HashMap<>();
-    args.put(1, id);
-    return queryExecutor.execQuery("SELECT count(*) FROM \"chatrooms\" WHERE id = ?", args, (r) -> {
-      r.next();
-      if (r.getLong(1) == 1)
-        return new ChatRoom(r.getLong(1));
-      else
-        return null;
-    });
+  @Nullable
+  public Set<Long> getParticipantIDs(Long roomId) throws Exception {
+    ChatRoom room;
+    if (allChats.containsKey(roomId)) {
+      room = allChats.get(roomId);
+    } else {
+      return null;
+    }
+    return room.getParticipantIDs();
+  }
+
+  public void close() {
+    queryExecutor.exit();
   }
 }

@@ -2,17 +2,16 @@ package com.github.lengl.net;
 
 import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.PasswordDBStorage;
-import com.github.lengl.ChatRoom.ChatRoom;
+import com.github.lengl.ChatRoom.ChatRoomDBStorage;
+import com.github.lengl.ChatRoom.ChatRoomStorable;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
 import com.github.lengl.Messages.MessageDBStorage;
 import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Messages.ServerMessageService;
 import com.github.lengl.Messages.ServerMessages.AuthMessage;
-import com.github.lengl.Messages.ServerMessages.ChatCreatedMessage;
 import com.github.lengl.Messages.ServerMessages.QuitMessage;
 import com.github.lengl.Messages.ServerMessages.ResponseMessage;
-import com.github.lengl.Users.User;
 import com.github.lengl.Users.UserDBStorage;
 
 import java.io.IOException;
@@ -36,16 +35,15 @@ public class ThreadedServer implements MessageListener {
   private final Map<Long, ConnectionHandler> handlers = new HashMap<>();
   private final Map<Long, Thread> handlerThreads = new HashMap<>();
 
-  //Map <authorizedUser, handlerId>
-  private final Map<User, Long> authorisedHandlers = new HashMap<>();
+  //Map <authorizedUserID, handlerId>
+  private final Map<Long, Long> authorisedHandlers = new HashMap<>();
   //Map <handlerId, handler>
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
-  //Map <chatID, chat>
-  private final Map<Long, ChatRoom> chatRooms = new HashMap<>();
 
   private final AtomicLong internalCounterID = new AtomicLong(0);
   private AuthorisationService authorisationService;
   private MessageStorable historyStorage;
+  private ChatRoomStorable chatRoomStorage;
 
   public ThreadedServer() {
     try {
@@ -71,6 +69,7 @@ public class ThreadedServer implements MessageListener {
 
   public void startServer() throws Exception {
     log.info("Started, waiting for connection");
+    chatRoomStorage = new ChatRoomDBStorage();
 
     isRunning = true;
     while (isRunning) {
@@ -82,9 +81,10 @@ public class ThreadedServer implements MessageListener {
       authorisationService = new AuthorisationService(new UserDBStorage(), new PasswordDBStorage());
       historyStorage = new MessageDBStorage();
 
+
       long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
-      inputHandlers.put(senderId, new ServerMessageService(authorisationService, historyStorage));
+      inputHandlers.put(senderId, new ServerMessageService(authorisationService, historyStorage, chatRoomStorage));
       Thread thread = new Thread(handler);
       thread.start();
       handlerThreads.put(senderId, thread);
@@ -104,6 +104,9 @@ public class ThreadedServer implements MessageListener {
     }
     if (historyStorage != null) {
       historyStorage.close();
+    }
+    if (chatRoomStorage != null) {
+      chatRoomStorage.close();
     }
   }
 
@@ -131,11 +134,7 @@ public class ThreadedServer implements MessageListener {
         }
         if (ret instanceof AuthMessage) {
           authorisedHandlers.values().remove(id);
-          authorisedHandlers.put(((AuthMessage) ret).getAuthorized(), id);
-        }
-        if (ret instanceof ChatCreatedMessage) {
-          ChatRoom room = ((ChatCreatedMessage) ret).getCreatedRoom();
-          chatRooms.put(room.getId(), room);
+          authorisedHandlers.put(((AuthMessage) ret).getAuthorized().getId(), id);
         }
 
       } catch (IOException e) {
@@ -154,27 +153,30 @@ public class ThreadedServer implements MessageListener {
         }
 
       } else {
-        ChatRoom room = chatRooms.get(message.getChatId());
-        if (room != null) {
-          Set<User> participants = room.getParticipants();
-          participants.forEach(participant -> {
-            Long handlerId = authorisedHandlers.get(participant);
-            if (handlerId != null) {
-              try {
-                handlers.get(handlerId).send(message);
-              } catch (IOException e) {
-                log.log(Level.SEVERE, "Unable to send message", e);
-                closeConnection(id);
+        try {
+          Set<Long> participants = chatRoomStorage.getParticipantIDs(message.getChatId());
+          if (participants != null) {
+            participants.forEach(participant -> {
+              Long handlerId = authorisedHandlers.get(participant);
+              if (handlerId != null) {
+                try {
+                  handlers.get(handlerId).send(message);
+                } catch (IOException e) {
+                  log.log(Level.SEVERE, "Unable to send message", e);
+                  closeConnection(id);
+                }
               }
+            });
+          } else {
+            try {
+              handlers.get(id).send(new ResponseMessage("Chat doesn't exist"));
+            } catch (IOException e) {
+              log.log(Level.SEVERE, "Unable to send message", e);
+              closeConnection(id);
             }
-          });
-        } else {
-          try {
-            handlers.get(id).send(new ResponseMessage("Chat doesn't exist"));
-          } catch (IOException e) {
-            log.log(Level.SEVERE, "Unable to send message", e);
-            closeConnection(id);
           }
+        } catch (Exception ex) {
+          log.log(Level.SEVERE, "Unable to receive chat participants", ex);
         }
       }
     }

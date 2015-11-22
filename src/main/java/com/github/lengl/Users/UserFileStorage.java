@@ -78,6 +78,11 @@ public class UserFileStorage implements UserStorable {
   }
 
   @Override
+  public String changeNickname(@NotNull Long id, @NotNull String newNickname) throws Exception {
+    return "OK";
+  }
+
+  @Override
   public void close() {
     try {
       //there is no check if storeWriter != null because constructor throws exception

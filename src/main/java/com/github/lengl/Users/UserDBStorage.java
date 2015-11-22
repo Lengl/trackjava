@@ -62,6 +62,17 @@ public class UserDBStorage implements UserStorable {
     });
   }
 
+  public String changeNickname(@NotNull Long id, @NotNull String newNickname) throws Exception {
+    if (findUserById(id) != null) {
+      Map<Integer, Object> args = new HashMap<>();
+      args.put(1, newNickname);
+      args.put(2, id);
+      return queryExecutor.updateQuery("UPDATE \"users\" SET nickname = ? WHERE id = ?;", args, (r) -> "Nickname successfully changed");
+    } else {
+      return "User not found";
+    }
+  }
+
   @Override
   public void close() {
     queryExecutor.exit();

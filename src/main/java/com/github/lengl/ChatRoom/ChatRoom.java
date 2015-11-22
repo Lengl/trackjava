@@ -1,40 +1,38 @@
 package com.github.lengl.ChatRoom;
 
-import com.github.lengl.Users.User;
-
 import java.util.HashSet;
 import java.util.Set;
 
 public class ChatRoom {
   protected static volatile long idCounter = 0;
   protected final long id;
-  protected final Set<User> participants = new HashSet<>();
+  protected final Set<Long> participantIDs = new HashSet<>();
 
-  public ChatRoom() {
+  protected ChatRoom() {
     this.id = idCounter++;
   }
 
-  public ChatRoom(long id) {
+  protected ChatRoom(long id) {
     this.id = id;
   }
 
-  public void addParticipant(User user) {
-    participants.add(user);
+  protected void addParticipant(Long userId) {
+    participantIDs.add(userId);
   }
 
-  public void removeParticipant(User user) {
-    participants.remove(user);
+  protected void removeParticipant(Long userId) {
+    participantIDs.remove(userId);
   }
 
-  boolean hasParticipant(User user) {
-    return participants.contains(user);
+  protected boolean hasParticipant(Long userId) {
+    return participantIDs.contains(userId);
   }
 
-  public Set<User> getParticipants() {
-    return participants;
+  protected Set<Long> getParticipantIDs() {
+    return participantIDs;
   }
 
-  public long getId() {
+  protected long getId() {
     return id;
   }
 }

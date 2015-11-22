@@ -2,9 +2,8 @@ package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.AuthorisationServiceResponse;
-import com.github.lengl.ChatRoom.ChatRoom;
+import com.github.lengl.ChatRoom.ChatRoomStorable;
 import com.github.lengl.Messages.ServerMessages.AuthMessage;
-import com.github.lengl.Messages.ServerMessages.ChatCreatedMessage;
 import com.github.lengl.Messages.ServerMessages.QuitMessage;
 import com.github.lengl.Messages.ServerMessages.ResponseMessage;
 import com.github.lengl.Users.User;
@@ -32,6 +31,7 @@ public class ServerMessageService implements InputHandler {
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
   private final Logger log = Logger.getLogger(ServerMessageService.class.getName());
   private final AuthorisationService authorisationService;
+  private ChatRoomStorable chatRoomDBStorage;
   private MessageStorable historyStorage = null;
   private User authorizedUser = null;
 
@@ -39,9 +39,10 @@ public class ServerMessageService implements InputHandler {
     this.authorisationService = authorisationService;
   }
 
-  public ServerMessageService(@NotNull AuthorisationService authorisationService, @NotNull MessageStorable storage) {
+  public ServerMessageService(@NotNull AuthorisationService authorisationService, @NotNull MessageStorable storage, @NotNull ChatRoomStorable chatRoomDBStorage) {
     this.authorisationService = authorisationService;
     this.historyStorage = storage;
+    this.chatRoomDBStorage = chatRoomDBStorage;
   }
 
   @Nullable
@@ -146,11 +147,13 @@ public class ServerMessageService implements InputHandler {
     }
     try {
       AuthorisationServiceResponse response = authorisationService.authorize(parsed[0], parsed[1]);
+      String ret = response.response;
       if (response.user != null) {
         authorizedUser = response.user;
         //historyStorage = new MessageFileStorage(authorizedUser);
+        ret = ret.concat("\n").concat(handleUserInfo());
       }
-      return response.response;
+      return ret;
     } catch (IOException e) {
       log.log(Level.SEVERE, "IOException: ", e);
       return "Usage: /login <your login> <your password>";
@@ -163,11 +166,17 @@ public class ServerMessageService implements InputHandler {
   @NotNull
   private String handleNickname(@NotNull String trimmed) {
     //TODO: Probably check if nickname already used & give it a number (e.g. lengl, lengl2, lengl3...)
-    //TODO: Save nickname to UserStore!!!
     int OFFSET = 5; //length of string "/user"
+    String newNickname = trimmed.substring(OFFSET).trim();
     if (authorizedUser != null) {
-      authorizedUser.setNickname(trimmed.substring(OFFSET).trim());
-      return "Username " + trimmed.substring(OFFSET).trim() + " set successfully.";
+      try {
+        authorisationService.userStorage.changeNickname(authorizedUser.getId(), newNickname);
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Exception: ", e);
+        return "Unable to change nickname";
+      }
+      authorizedUser.setNickname(newNickname);
+      return "Nickname " + trimmed.substring(OFFSET).trim() + " set successfully.";
     } else {
       return UNAUTHORIZED;
     }
@@ -220,29 +229,34 @@ public class ServerMessageService implements InputHandler {
   @NotNull
   private Message handleChatCreate(@NotNull String trimmed) {
     if (authorizedUser != null) {
-      int OFFSET = "/chat_create".length();
-      String[] userlist = trimmed.substring(OFFSET).trim().split(",");
-      ChatRoom room;
-      room = new ChatRoom();
-      StringBuilder stringBuilder = new StringBuilder();
-      for (String userId : userlist) {
-        try {
-          User foundUser = authorisationService.userStorage.findUserById(Integer.parseInt(userId));
-          if (foundUser != null)
-            room.addParticipant(foundUser);
-          else
-            stringBuilder.append("User ").append(userId).append(" not found\n");
-        } catch (NumberFormatException ex) {
-          log.info("Wrong input parameter for chatCreate");
-          return new ResponseMessage("Usage: /chat_create <user_id>, <user_id>, ...");
-        } catch (Exception e) {
-          log.log(Level.SEVERE, "Exception: ", e);
-          return new ResponseMessage("Unable to create chat. Please try again later");
+      try {
+        int OFFSET = "/chat_create".length();
+        String[] userlist = trimmed.substring(OFFSET).trim().split(",");
+        Long roomId;
+        roomId = chatRoomDBStorage.createChatRoom();
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String userId : userlist) {
+          try {
+            User foundUser = authorisationService.userStorage.findUserById(Integer.parseInt(userId));
+            if (foundUser != null)
+              chatRoomDBStorage.addParticipant(roomId, foundUser.getId());
+            else
+              stringBuilder.append("User ").append(userId).append(" not found\n");
+          } catch (NumberFormatException ex) {
+            log.info("Wrong input parameter for chatCreate");
+            return new ResponseMessage("Usage: /chat_create <user_id>, <user_id>, ...");
+          } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception: ", e);
+            return new ResponseMessage("Unable to create chat. Please try again later");
+          }
         }
+        chatRoomDBStorage.addParticipant(roomId, authorizedUser.getId());
+        stringBuilder.append("Chat ").append(roomId).append(" created successfully.");
+        return new ResponseMessage(stringBuilder.toString());
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Exception: ", e);
+        return new ResponseMessage("Unable to create chat. Please try again later");
       }
-      room.addParticipant(authorizedUser);
-      stringBuilder.append("Chat ").append(room.getId()).append(" created successfully.");
-      return new ChatCreatedMessage(stringBuilder.toString(), room);
     } else {
       return new ResponseMessage(UNAUTHORIZED);
     }

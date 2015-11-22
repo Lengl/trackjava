@@ -14,5 +14,8 @@ public interface UserStorable {
   @Nullable
   User findUserById(@NotNull long id) throws Exception;
 
+  @NotNull
+  String changeNickname(@NotNull Long id, @NotNull String newNickname) throws Exception;
+
   void close();
 }
