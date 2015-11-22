@@ -38,9 +38,15 @@ public class PasswordDBStorage implements PasswordStorable {
     args.put(1, user.getId());
     args.put(2, Encoder.encode(pass));
 
-    return queryExecutor.execQuery("SELECT * FROM \"passwords\" WHERE user_id = ? AND password = ?;", args, (r) -> {
-      return r.next();
-    });
+    return queryExecutor.execQuery("SELECT * FROM \"passwords\" WHERE user_id = ? AND password = ?;", args, (r) -> r.next());
+  }
+
+  @Override
+  public String changePassword(@NotNull User user, @NotNull String pass) throws Exception {
+    Map<Integer, Object> args = new HashMap<>();
+    args.put(1, Encoder.encode(pass));
+    args.put(2, user.getId());
+    return queryExecutor.updateQuery("UPDATE \"passwords\" SET password = ? WHERE user_id = ?;", args, (r) -> "Password changed successfully");
   }
 
   @Override

@@ -23,6 +23,7 @@ public class ServerMessageService implements InputHandler {
           "/signin <login> <password>\n" +
           "/user <nickname>\n" +
           "/user_info <user_id>" +
+          "/user_pass <old password> <new password>" +
           "/history <amount>\n" +
           "/find <regex>\n" +
           "/chat_create <user_id>, <user_id>, ...\n" +
@@ -69,6 +70,11 @@ public class ServerMessageService implements InputHandler {
       //return this user's info
       if (trimmed.startsWith("/user_info")) {
         return new ResponseMessage(handleUserInfo(trimmed));
+      }
+
+      //change authorized user's password
+      if (trimmed.startsWith("/user_pass")) {
+        return new ResponseMessage(handleUserChangePass(trimmed));
       }
 
       //change user nickname
@@ -266,7 +272,7 @@ public class ServerMessageService implements InputHandler {
   @NotNull
   String handleUserInfo(@Nullable String trimmed) {
     if (authorizedUser != null) {
-      if (trimmed == null)
+      if (trimmed == null || "/user_info".equals(trimmed))
         return authorizedUser.toString();
       try {
         int OFFSET = "/user_info".length();
@@ -282,6 +288,29 @@ public class ServerMessageService implements InputHandler {
       } catch (Exception e) {
         log.log(Level.SEVERE, "Handle User Info Exception: ", e);
         return "Unable to find info";
+      }
+    } else {
+      return UNAUTHORIZED;
+    }
+  }
+
+  @NotNull
+  String handleUserChangePass(@NotNull String trimmed) {
+    if (authorizedUser != null) {
+      int OFFSET = "/user_pass".length();
+      String[] passOldAndNew = trimmed.substring(OFFSET).trim().split(" ", 2);
+      if (passOldAndNew.length != 2) {
+        return "Usage: /user_pass <old password> <new password>";
+      }
+      try {
+        AuthorisationServiceResponse response = authorisationService.authorize(authorizedUser.getLogin(), passOldAndNew[0]);
+        if (response.user != null)
+          return authorisationService.passwordStorage.changePassword(authorizedUser, passOldAndNew[1]);
+        else
+          return response.response;
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Change Password Exception: ", e);
+        return "Unable to change password";
       }
     } else {
       return UNAUTHORIZED;

@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class AuthorisationService {
   private final Logger log = Logger.getLogger(AuthorisationService.class.getName());
   public final UserStorable userStorage;
-  private PasswordStorable passwordStorage;
+  public final PasswordStorable passwordStorage;
 
   public AuthorisationService() throws Exception {
     this.userStorage = new UserFileStorage();

@@ -78,6 +78,11 @@ public class PasswordFileStorage implements PasswordStorable {
     }
   }
 
+  @Override
+  public String changePassword(@NotNull User user, @NotNull String pass) throws Exception {
+    return "OK";
+  }
+
   public void close() {
     try {
       //there is no check if storeWriter != null because constructor throws exception

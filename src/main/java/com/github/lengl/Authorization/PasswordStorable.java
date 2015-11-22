@@ -10,5 +10,7 @@ public interface PasswordStorable {
   @NotNull
   boolean check(@NotNull User user, @NotNull String pass) throws Exception;
 
+  String changePassword(@NotNull User user, @NotNull String pass) throws Exception;
+
   void close();
 }
