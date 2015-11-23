@@ -98,11 +98,7 @@ public class MessageFileStorage implements MessageStorable {
     ListIterator<Message> msgHistoryIterator = messageHistory.listIterator(messageHistory.size() - mySize);
     StringBuilder buffer = new StringBuilder();
     while (msgHistoryIterator.hasNext()) {
-      buffer.append(msgHistoryIterator.next().getBody());
-      //TODO: There is a double-check on same condition. But it should be tested before trying to append (empty history)
-      if (msgHistoryIterator.hasNext()) {
-        buffer.append("\n");
-      }
+      buffer.append("\n  ").append(msgHistoryIterator.next().getBody());
     }
     String ret = buffer.toString();
     if (ret.isEmpty()) {

@@ -30,8 +30,8 @@ public class ServerMessageService implements InputHandler {
           "/login <login> <password>\n" +
           "/signin <login> <password>\n" +
           "/user <nickname>\n" +
-          "/user_info <user_id>" +
-          "/user_pass <old password> <new password>" +
+          "/user_info <user_id>\n" +
+          "/user_pass <old password> <new password>\n" +
           "/quit";
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
