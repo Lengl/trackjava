@@ -117,6 +117,11 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
     });
   }
 
+  @Override
+  public boolean isParticipant(Long roomId, Long userId) throws Exception {
+    return allChats.containsKey(roomId) && allChats.get(roomId).hasParticipant(userId);
+  }
+
   public void close() {
     queryExecutor.exit();
   }

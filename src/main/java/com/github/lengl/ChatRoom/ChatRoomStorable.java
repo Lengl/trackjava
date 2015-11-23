@@ -13,5 +13,7 @@ public interface ChatRoomStorable {
 
   Set<Long> getChatsFromUser(Long userId) throws Exception;
 
+  boolean isParticipant(Long roomId, Long userId) throws Exception;
+
   void close();
 }

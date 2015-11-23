@@ -76,25 +76,33 @@ public class MessageDBStorage implements MessageStorable {
   public String getHistory(int size, User user, Long chat_id) throws Exception {
     Map<Integer, Object> args = new HashMap<>();
     StringBuilder query = new StringBuilder();
-    query.append("SELECT id, body FROM \"messages\" WHERE author_id = ?");
+
+    query.append("SELECT * FROM (SELECT m.id, nickname, body FROM \"messages\" as m LEFT JOIN \"users\" as u ON m.author_id = u.id WHERE");
     int argid = 1;
-    args.put(argid++, user.getId());
+    if (user != null) {
+      args.put(argid++, user.getId());
+      query.append(" author_id = ? AND");
+    }
     if (chat_id != null) {
       args.put(argid++, chat_id);
-      query.append(" AND chat_id = ?");
+      query.append(" chat_id = ?");
     } else {
-      query.append(" AND chat_id IS NULL");
+      query.append(" chat_id IS NULL");
     }
-    query.append(" ORDER BY id");
     if (size > 0) {
-      query.append(" LIMIT ?");
+      query.append(" ORDER BY m.id ASC LIMIT ?");
       args.put(argid++, size);
     }
-    query.append(";");
+    query.append(") sub ORDER BY id DESC;");
+
     return queryExecutor.execQuery(query.toString(), args, (r) -> {
       StringBuilder builder = new StringBuilder();
       while (r.next()) {
-        builder.append("\n").append(r.getString("body"));
+        builder.append("\n");
+        if (user == null) {
+          builder.append(r.getString("nickname")).append(": ");
+        }
+        builder.append(r.getString("body"));
       }
       if (builder.length() == 0)
         return "No Matches";

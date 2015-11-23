@@ -29,7 +29,8 @@ public class ServerMessageService implements InputHandler {
           "/find <regex>\n" +
           "/chat_create <user_id>, <user_id>, ...\n" +
           "/chat_send <chat_id> <message>\n" +
-          "/chat_list" +
+          "/chat_list\n" +
+          "/chat_history <chat_id> <amount>\n" +
           "/quit";
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
@@ -99,9 +100,14 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(handleChatCreate(trimmed));
       }
 
-      //availiable chats
+      //available chats
       if (trimmed.startsWith("/chat_list")) {
         return new ResponseMessage(handleChatList(trimmed));
+      }
+
+      //chatHistory
+      if (trimmed.startsWith("/chat_history")) {
+        return new ResponseMessage(handleChatHistory(trimmed));
       }
 
       //finish sending Messages
@@ -346,6 +352,37 @@ public class ServerMessageService implements InputHandler {
       }
     } else {
       return "General chat";
+    }
+  }
+
+  @NotNull
+  private String handleChatHistory(@NotNull String trimmed) {
+    int OFFSET = "/chat_history".length();
+    if (authorizedUser != null) {
+      String[] params = trimmed.substring(OFFSET).trim().split(" ", 2);
+      try {
+        if ("/chat_history".equals(trimmed)) {
+          return "Usage: /chat_history <chat_id> <amount>";
+        } else {
+          long chat_id = Long.parseLong(params[0]);
+          if (!chatRoomDBStorage.isParticipant(chat_id, authorizedUser.getId())) {
+            return "You don't belong to this conversation";
+          }
+          if (params.length == 1) {
+            return historyStorage.getHistory(0, null, chat_id);
+          } else {
+            return historyStorage.getHistory(Integer.parseInt(params[1]), null, chat_id);
+          }
+        }
+      } catch (NumberFormatException ex) {
+        log.info("Wrong input parameter caught for \"chat_history\"");
+        return "Usage: /chat_history <chat_id> <amount>";
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "handleChatHistory exception: ", e);
+        return "Unable to find messages. Please try again later";
+      }
+    } else {
+      return UNAUTHORIZED;
     }
   }
 
