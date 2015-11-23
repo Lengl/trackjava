@@ -47,7 +47,7 @@ public class MessageDBStorage implements MessageStorable {
     Map<Integer, Object> args = new HashMap<>();
     String query;
     args.put(1, user.getId());
-    args.put(2, regex);
+    args.put(2, "%" + regex + "%");
     if (chat_id != null) {
       args.put(3, chat_id);
       query = "SELECT body FROM \"messages\" WHERE author_id = ? AND body LIKE ? AND chat_id = ?;";
@@ -58,7 +58,7 @@ public class MessageDBStorage implements MessageStorable {
     return queryExecutor.execQuery(query, args, (r) -> {
       StringBuilder builder = new StringBuilder();
       while (r.next()) {
-        builder.append(r.getString("body")).append("\n");
+        builder.append("\n  ").append(r.getString("body"));
       }
       if (builder.length() == 0)
         return "No Matches";
@@ -98,7 +98,7 @@ public class MessageDBStorage implements MessageStorable {
     return queryExecutor.execQuery(query.toString(), args, (r) -> {
       StringBuilder builder = new StringBuilder();
       while (r.next()) {
-        builder.append("\n");
+        builder.append("\n  ");
         if (user == null) {
           builder.append(r.getString("nickname")).append(": ");
         }

@@ -20,17 +20,18 @@ import java.util.regex.PatternSyntaxException;
 public class ServerMessageService implements InputHandler {
   private static final String HELP =
       "/help\n" +
+          "/chat_create <user_id>, <user_id>, ...\n" +
+          "/chat_find <chat_id> <regex>\n" +
+          "/chat_history <chat_id> <amount>\n" +
+          "/chat_list\n" +
+          "/chat_send <chat_id> <message>\n" +
+          "/find <regex>\n" +
+          "/history <amount>\n" +
           "/login <login> <password>\n" +
           "/signin <login> <password>\n" +
           "/user <nickname>\n" +
           "/user_info <user_id>" +
           "/user_pass <old password> <new password>" +
-          "/history <amount>\n" +
-          "/find <regex>\n" +
-          "/chat_create <user_id>, <user_id>, ...\n" +
-          "/chat_send <chat_id> <message>\n" +
-          "/chat_list\n" +
-          "/chat_history <chat_id> <amount>\n" +
           "/quit";
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
@@ -100,14 +101,19 @@ public class ServerMessageService implements InputHandler {
         return new ResponseMessage(handleChatCreate(trimmed));
       }
 
-      //available chats
-      if (trimmed.startsWith("/chat_list")) {
-        return new ResponseMessage(handleChatList(trimmed));
+      //find in chat
+      if (trimmed.startsWith("/chat_find")) {
+        return new ResponseMessage(handleChatFind(trimmed));
       }
 
       //chatHistory
       if (trimmed.startsWith("/chat_history")) {
         return new ResponseMessage(handleChatHistory(trimmed));
+      }
+
+      //available chats
+      if (trimmed.startsWith("/chat_list")) {
+        return new ResponseMessage(handleChatList(trimmed));
       }
 
       //finish sending Messages
@@ -374,6 +380,32 @@ public class ServerMessageService implements InputHandler {
             return historyStorage.getHistory(Integer.parseInt(params[1]), null, chat_id);
           }
         }
+      } catch (NumberFormatException ex) {
+        log.info("Wrong input parameter caught for \"chat_history\"");
+        return "Usage: /chat_history <chat_id> <amount>";
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "handleChatHistory exception: ", e);
+        return "Unable to find messages. Please try again later";
+      }
+    } else {
+      return UNAUTHORIZED;
+    }
+  }
+
+  @NotNull
+  private String handleChatFind(@NotNull String trimmed) {
+    if (authorizedUser != null) {
+      int OFFSET = "/chat_find".length();
+      String[] params = trimmed.substring(OFFSET).trim().split(" ", 2);
+      try {
+        if ("/chat_find".equals(trimmed) || params.length != 2) {
+          return "Usage: /chat_find <chat_id> <regex>";
+        }
+        long chat_id = Long.parseLong(params[0]);
+        if (!chatRoomDBStorage.isParticipant(chat_id, authorizedUser.getId())) {
+          return "You don't belong to this conversation";
+        }
+        return historyStorage.findMessage(params[1], authorizedUser, chat_id);
       } catch (NumberFormatException ex) {
         log.info("Wrong input parameter caught for \"chat_history\"");
         return "Usage: /chat_history <chat_id> <amount>";
