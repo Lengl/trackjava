@@ -11,6 +11,7 @@ import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -28,6 +29,7 @@ public class ServerMessageService implements InputHandler {
           "/find <regex>\n" +
           "/chat_create <user_id>, <user_id>, ...\n" +
           "/chat_send <chat_id> <message>\n" +
+          "/chat_list" +
           "/quit";
   private static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
@@ -94,7 +96,12 @@ public class ServerMessageService implements InputHandler {
 
       //create chat
       if (trimmed.startsWith("/chat_create")) {
-        return handleChatCreate(trimmed);
+        return new ResponseMessage(handleChatCreate(trimmed));
+      }
+
+      //availiable chats
+      if (trimmed.startsWith("/chat_list")) {
+        return new ResponseMessage(handleChatList(trimmed));
       }
 
       //finish sending Messages
@@ -234,7 +241,7 @@ public class ServerMessageService implements InputHandler {
   }
 
   @NotNull
-  private Message handleChatCreate(@NotNull String trimmed) {
+  private String handleChatCreate(@NotNull String trimmed) {
     if (authorizedUser != null) {
       try {
         int OFFSET = "/chat_create".length();
@@ -251,26 +258,26 @@ public class ServerMessageService implements InputHandler {
               stringBuilder.append("User ").append(userId).append(" not found\n");
           } catch (NumberFormatException ex) {
             log.info("Wrong input parameter for chatCreate");
-            return new ResponseMessage("Usage: /chat_create <user_id>, <user_id>, ...");
+            return "Usage: /chat_create <user_id>, <user_id>, ...";
           } catch (Exception e) {
             log.log(Level.SEVERE, "Exception: ", e);
-            return new ResponseMessage("Unable to create chat. Please try again later");
+            return "Unable to create chat. Please try again later";
           }
         }
         chatRoomDBStorage.addParticipant(roomId, authorizedUser.getId());
         stringBuilder.append("Chat ").append(roomId).append(" created successfully.");
-        return new ResponseMessage(stringBuilder.toString());
+        return stringBuilder.toString();
       } catch (Exception e) {
         log.log(Level.SEVERE, "Exception: ", e);
-        return new ResponseMessage("Unable to create chat. Please try again later");
+        return "Unable to create chat. Please try again later";
       }
     } else {
-      return new ResponseMessage(UNAUTHORIZED);
+      return UNAUTHORIZED;
     }
   }
 
   @NotNull
-  String handleUserInfo(@Nullable String trimmed) {
+  private String handleUserInfo(@Nullable String trimmed) {
     if (authorizedUser != null) {
       if (trimmed == null || "/user_info".equals(trimmed))
         return authorizedUser.toString();
@@ -295,7 +302,7 @@ public class ServerMessageService implements InputHandler {
   }
 
   @NotNull
-  String handleUserChangePass(@NotNull String trimmed) {
+  private String handleUserChangePass(@NotNull String trimmed) {
     if (authorizedUser != null) {
       int OFFSET = "/user_pass".length();
       String[] passOldAndNew = trimmed.substring(OFFSET).trim().split(" ", 2);
@@ -314,6 +321,31 @@ public class ServerMessageService implements InputHandler {
       }
     } else {
       return UNAUTHORIZED;
+    }
+  }
+
+  @NotNull
+  private String handleChatList(@NotNull String trimmed) {
+    if (authorizedUser != null) {
+      int OFFSET = "/chat_list".length();
+      try {
+        if ("/chat_list".equals(trimmed)) {
+          Set<Long> chats = chatRoomDBStorage.getChatsFromUser(authorizedUser.getId());
+          if (chats.size() == 0) {
+            return "General chat";
+          }
+          StringBuilder builder = new StringBuilder();
+          chats.stream().forEach(c -> builder.append("\n  ").append(c));
+          return builder.append("\n  ").append("General chat").toString();
+        } else {
+          return "Usage: /chat_list";
+        }
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Change Password Exception: ", e);
+        return "Unable to change password";
+      }
+    } else {
+      return "General chat";
     }
   }
 

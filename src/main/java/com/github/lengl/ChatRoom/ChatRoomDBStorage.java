@@ -6,6 +6,7 @@ import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,7 +82,7 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
     }
     if (room.hasParticipant(userId)) {
       Map<Integer, Object> args = new HashMap<>();
-      args.put(1, room.getId());
+      args.put(1, roomId);
       args.put(2, userId);
       //TODO: Write something that makes more sence
       String ret = queryExecutor.execQuery("DELETE FROM \"chatroom_users\" WHERE chat_id = ? AND participant_id = ?;", args, (r) -> "User removed successfully");
@@ -101,6 +102,19 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
       return null;
     }
     return room.getParticipantIDs();
+  }
+
+  @Override
+  public Set<Long> getChatsFromUser(Long userId) throws Exception {
+    Map<Integer, Object> args = new HashMap<>();
+    args.put(1, userId);
+    return queryExecutor.execQuery("SELECT chat_id FROM \"chatroom_users\" WHERE participant_id = ?;", args, (r) -> {
+      Set<Long> ret = new HashSet<>();
+      while (r.next()) {
+        ret.add(r.getLong("chat_id"));
+      }
+      return ret;
+    });
   }
 
   public void close() {
