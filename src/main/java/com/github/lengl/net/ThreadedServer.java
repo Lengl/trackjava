@@ -133,7 +133,8 @@ public class ThreadedServer implements MessageListener {
           closeConnection(id);
         }
         if (ret instanceof AuthMessage) {
-          authorisedHandlers.values().remove(id);
+          if(authorisedHandlers.containsKey(id))
+            authorisedHandlers.values().remove(id);
           authorisedHandlers.put(((AuthMessage) ret).getAuthorized().getId(), id);
         }
 
@@ -156,18 +157,30 @@ public class ThreadedServer implements MessageListener {
         try {
           Set<Long> participants = chatRoomStorage.getParticipantIDs(message.getChatId());
           if (participants != null) {
-            participants.forEach(participant -> {
-              Long handlerId = authorisedHandlers.get(participant);
-              if (handlerId != null) {
-                try {
-                  handlers.get(handlerId).send(message);
-                } catch (IOException e) {
-                  log.log(Level.SEVERE, "Unable to send message", e);
-                  closeConnection(id);
-                }
+            if (!participants.contains(message.getAuthorId())) {
+              //He doesn't belong chat
+              try {
+                handlers.get(id).send(new ResponseMessage("You don't belong to this chat!"));
+              } catch (IOException e) {
+                log.log(Level.SEVERE, "Unable to send message", e);
+                closeConnection(id);
               }
-            });
+            } else {
+              //Send message to everyone in chat
+              participants.forEach(participant -> {
+                Long handlerId = authorisedHandlers.get(participant);
+                if (handlerId != null) {
+                  try {
+                    handlers.get(handlerId).send(message);
+                  } catch (IOException e) {
+                    log.log(Level.SEVERE, "Unable to send message", e);
+                    closeConnection(id);
+                  }
+                }
+              });
+            }
           } else {
+            //Trying to send message in the chat that doesn't exist
             try {
               handlers.get(id).send(new ResponseMessage("Chat doesn't exist"));
             } catch (IOException e) {
