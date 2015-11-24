@@ -2,6 +2,8 @@ package com.github.lengl.Messages;
 
 import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.PasswordStorable;
+import com.github.lengl.Messages.ServerMessages.AuthMessage;
+import com.github.lengl.Messages.ServerMessages.ResponseMessage;
 import com.github.lengl.Users.User;
 import com.github.lengl.Users.UserStorable;
 import org.junit.Before;
@@ -29,22 +31,22 @@ public class ServerMessageServiceTest {
   }
 
   @Test
-  public void successLogin(){
+  public void successLogin() {
     Message react = serverMessageService.react(new Message("/login Greener strongpass"));
-    Message expect = new Message("Authorised successfully", "server");
+    Message expect = new AuthMessage("Authorised successfully\n" + defaultUser.toString(), defaultUser);
     assertTrue(expect.equals(react));
   }
 
   @Test
   public void wrongPass() {
-    Message expect = new Message("Incorrect password", "server");
+    Message expect = new AuthMessage("Incorrect password", null);
     Message react = serverMessageService.react(new Message("/login Greener weakpass"));
     assertTrue(expect.equals(react));
   }
 
   @Test
   public void noUser() {
-    Message expect = new Message("There is no user with this login.", "server");
+    Message expect = new AuthMessage("There is no user with this login.", null);
     Message react = serverMessageService.react(new Message("/login Black mypass"));
     assertTrue(expect.equals(react));
   }
