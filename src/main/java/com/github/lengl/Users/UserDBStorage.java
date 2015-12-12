@@ -14,9 +14,8 @@ public class UserDBStorage implements UserStorable {
 
   private final QueryExecutable queryExecutor;
 
-  public UserDBStorage() throws Exception {
-    queryExecutor = new QueryExecutor();
-    queryExecutor.initialize();
+  public UserDBStorage(QueryExecutor queryExecutor) {
+    this.queryExecutor = queryExecutor;
   }
 
   @Override
@@ -75,6 +74,5 @@ public class UserDBStorage implements UserStorable {
 
   @Override
   public void close() {
-    queryExecutor.exit();
   }
 }

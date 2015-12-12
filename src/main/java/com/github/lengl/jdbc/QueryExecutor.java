@@ -11,26 +11,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class QueryExecutor implements QueryExecutable {
-  private static PGPoolingDataSource source;
-  private static Map<String, PreparedStatement> preparedStatements;
-  private static volatile long userCounter = 0;
+  private final PGPoolingDataSource source;
+  private final Map<String, PreparedStatement> preparedStatements;
 
-  public synchronized void initialize() throws ClassNotFoundException {
-    if (source == null) {
-      Class.forName("org.postgresql.Driver");
+  public QueryExecutor() throws ClassNotFoundException {
+    Class.forName("org.postgresql.Driver");
 
-      source = new PGPoolingDataSource();
-      source.setDataSourceName("My DB");
-      source.setServerName("178.62.140.149");
-      source.setDatabaseName("Lengl");
-      source.setUser("senthil");
-      source.setPassword("ubuntu");
-      source.setMaxConnections(10);
-    }
-    if (preparedStatements == null) {
-      preparedStatements = new HashMap<>();
-    }
-    userCounter++;
+    source = new PGPoolingDataSource();
+    source.setDataSourceName("My DB");
+    source.setServerName("178.62.140.149");
+    source.setDatabaseName("Lengl");
+    source.setUser("senthil");
+    source.setPassword("ubuntu");
+    source.setMaxConnections(10);
+    preparedStatements = new HashMap<>();
   }
 
   // General Query
@@ -97,24 +91,15 @@ public class QueryExecutor implements QueryExecutable {
     }
   }
 
-  public void exit() {
-    userCounter--;
-    if (userCounter == 0) {
-      if (source != null) {
-        source.close();
-        source = null;
-      }
-      if (preparedStatements != null) {
-        preparedStatements.values().stream().forEach(stmt -> {
-              try {
-                stmt.close();
-              } catch (SQLException ex) {
-                //TODO: Log it?
-              }
-            }
-        );
-        preparedStatements = null;
-      }
-    }
+  public void close() {
+    preparedStatements.values().stream().forEach(stmt -> {
+          try {
+            stmt.close();
+          } catch (SQLException ex) {
+            //TODO: Log it?
+          }
+        }
+    );
+    source.close();
   }
 }

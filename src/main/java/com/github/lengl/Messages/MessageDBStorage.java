@@ -14,9 +14,8 @@ public class MessageDBStorage implements MessageStorable {
 
   private final QueryExecutable queryExecutor;
 
-  public MessageDBStorage() throws Exception {
-    queryExecutor = new QueryExecutor();
-    queryExecutor.initialize();
+  public MessageDBStorage(QueryExecutor queryExecutor) {
+    this.queryExecutor = queryExecutor;
   }
 
   @Override
@@ -113,6 +112,5 @@ public class MessageDBStorage implements MessageStorable {
 
   @Override
   public void close() {
-    queryExecutor.exit();
   }
 }

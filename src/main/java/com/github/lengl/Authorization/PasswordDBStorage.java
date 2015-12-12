@@ -15,9 +15,8 @@ public class PasswordDBStorage implements PasswordStorable {
 
   private final QueryExecutable queryExecutor;
 
-  public PasswordDBStorage() throws Exception {
-    queryExecutor = new QueryExecutor();
-    queryExecutor.initialize();
+  public PasswordDBStorage(QueryExecutor queryExecutor) {
+    this.queryExecutor = queryExecutor;
   }
 
   @Override
@@ -51,6 +50,5 @@ public class PasswordDBStorage implements PasswordStorable {
 
   @Override
   public void close() {
-    queryExecutor.exit();
   }
 }

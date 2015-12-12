@@ -15,10 +15,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
 
   private final Map<Long, ChatRoom> allChats = new HashMap<>();
 
-  public ChatRoomDBStorage() throws Exception {
-    queryExecutor = new QueryExecutor();
-    queryExecutor.initialize();
-    queryExecutor.execQuery("SELECT chat_id, participant_id FROM \"chatrooms\" as c LEFT JOIN \"chatroom_users\" as cu ON c.id = cu.chat_id;", (r) -> {
+  public ChatRoomDBStorage(QueryExecutor queryExecutor) throws Exception {
+    this.queryExecutor = queryExecutor;
+    this.queryExecutor.execQuery("SELECT chat_id, participant_id FROM \"chatrooms\" as c LEFT JOIN \"chatroom_users\" as cu ON c.id = cu.chat_id;", (r) -> {
       long chat_id = -1;
       ChatRoom chatRoom = null;
       while (r.next()) {
@@ -123,6 +122,5 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
   }
 
   public void close() {
-    queryExecutor.exit();
   }
 }

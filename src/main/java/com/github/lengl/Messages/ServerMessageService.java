@@ -7,6 +7,7 @@ import com.github.lengl.Messages.ServerMessages.AuthMessage;
 import com.github.lengl.Messages.ServerMessages.QuitMessage;
 import com.github.lengl.Messages.ServerMessages.ResponseMessage;
 import com.github.lengl.Users.User;
+import com.github.lengl.net.Resources;
 import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 
@@ -37,18 +38,20 @@ public class ServerMessageService implements InputHandler {
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
   private final Logger log = Logger.getLogger(ServerMessageService.class.getName());
   private final AuthorisationService authorisationService;
-  private ChatRoomStorable chatRoomDBStorage;
-  private MessageStorable historyStorage = null;
+  private final ChatRoomStorable chatRoomDBStorage;
+  private final MessageStorable historyStorage;
   private User authorizedUser = null;
-
-  public ServerMessageService(@NotNull AuthorisationService authorisationService) {
-    this.authorisationService = authorisationService;
-  }
 
   public ServerMessageService(@NotNull AuthorisationService authorisationService, @NotNull MessageStorable storage, @NotNull ChatRoomStorable chatRoomDBStorage) {
     this.authorisationService = authorisationService;
     this.historyStorage = storage;
     this.chatRoomDBStorage = chatRoomDBStorage;
+  }
+
+  public ServerMessageService(@NotNull Resources resources) {
+    this.authorisationService = resources.authorisationService;
+    this.historyStorage = resources.historyStorage;
+    this.chatRoomDBStorage = resources.chatRoomStorage;
   }
 
   @Nullable
@@ -419,7 +422,5 @@ public class ServerMessageService implements InputHandler {
   }
 
   public void stop() {
-//    if (historyStorage != null)
-//      historyStorage.close();
   }
 }

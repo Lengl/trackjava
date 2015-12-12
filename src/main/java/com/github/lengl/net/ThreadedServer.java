@@ -41,9 +41,7 @@ public class ThreadedServer implements MessageListener {
   private final Map<Long, InputHandler> inputHandlers = new HashMap<>();
 
   private final AtomicLong internalCounterID = new AtomicLong(0);
-  private AuthorisationService authorisationService;
-  private MessageStorable historyStorage;
-  private ChatRoomStorable chatRoomStorage;
+  private Resources resources;
 
   public ThreadedServer() {
     try {
@@ -69,7 +67,7 @@ public class ThreadedServer implements MessageListener {
 
   public void startServer() throws Exception {
     log.info("Started, waiting for connection");
-    chatRoomStorage = new ChatRoomDBStorage();
+    resources = new Resources();
 
     isRunning = true;
     while (isRunning) {
@@ -78,13 +76,10 @@ public class ThreadedServer implements MessageListener {
       ConnectionHandler handler = new SocketConnectionHandler(socket);
       handler.addListener(this);
 
-      authorisationService = new AuthorisationService(new UserDBStorage(), new PasswordDBStorage());
-      historyStorage = new MessageDBStorage();
-
 
       long senderId = internalCounterID.incrementAndGet();
       handlers.put(senderId, handler);
-      inputHandlers.put(senderId, new ServerMessageService(authorisationService, historyStorage, chatRoomStorage));
+      inputHandlers.put(senderId, new ServerMessageService(resources));
       Thread thread = new Thread(handler);
       thread.start();
       handlerThreads.put(senderId, thread);
@@ -99,15 +94,7 @@ public class ThreadedServer implements MessageListener {
     isRunning = false;
     Set<Long> keys = handlers.keySet();
     keys.forEach(key -> closeConnection(key));
-    if (authorisationService != null) {
-      authorisationService.stop();
-    }
-    if (historyStorage != null) {
-      historyStorage.close();
-    }
-    if (chatRoomStorage != null) {
-      chatRoomStorage.close();
-    }
+    resources.close();
   }
 
   private void closeConnection(long id) {
@@ -155,7 +142,7 @@ public class ThreadedServer implements MessageListener {
 
       } else {
         try {
-          Set<Long> participants = chatRoomStorage.getParticipantIDs(message.getChatId());
+          Set<Long> participants = resources.chatRoomStorage.getParticipantIDs(message.getChatId());
           if (participants != null) {
             if (!participants.contains(message.getAuthorId())) {
               //He doesn't belong chat
