@@ -7,10 +7,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 
 public class QueryExecutor implements QueryExecutable {
   private static PGPoolingDataSource source;
+  private static Map<String, PreparedStatement> preparedStatements;
   private static volatile long userCounter = 0;
 
   public synchronized void initialize() throws ClassNotFoundException {
@@ -25,15 +27,17 @@ public class QueryExecutor implements QueryExecutable {
       source.setPassword("ubuntu");
       source.setMaxConnections(10);
     }
+    if (preparedStatements == null) {
+      preparedStatements = new HashMap<>();
+    }
     userCounter++;
   }
 
   // General Query
   public <T> T execQuery(String query, ResultHandler<T> handler) throws SQLException {
     Connection connection = source.getConnection();
-    Statement stmt = connection.createStatement();
-    stmt.execute(query);
-    ResultSet result = stmt.getResultSet();
+    PreparedStatement stmt = getPrepared(connection, query);
+    ResultSet result = stmt.executeQuery();
     T value = handler.handle(result);
     result.close();
     stmt.close();
@@ -44,7 +48,7 @@ public class QueryExecutor implements QueryExecutable {
   // Prepared Statement
   public <T> T execQuery(String query, Map<Integer, Object> args, ResultHandler<T> handler) throws SQLException {
     Connection connection = source.getConnection();
-    PreparedStatement stmt = connection.prepareStatement(query);
+    PreparedStatement stmt = getPrepared(connection, query);
     for (Map.Entry<Integer, Object> entry : args.entrySet()) {
       stmt.setObject(entry.getKey(), entry.getValue());
     }
@@ -60,7 +64,7 @@ public class QueryExecutor implements QueryExecutable {
 
   public <T> T updateQuery(String query, Map<Integer, Object> args, ResultHandler<T> handler) throws SQLException {
     Connection connection = source.getConnection();
-    PreparedStatement statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+    PreparedStatement statement = getPrepared(connection, query, Statement.RETURN_GENERATED_KEYS);
     for (Map.Entry<Integer, Object> entry : args.entrySet()) {
       statement.setObject(entry.getKey(), entry.getValue());
     }
@@ -72,6 +76,26 @@ public class QueryExecutor implements QueryExecutable {
     statement.close();
     connection.close();
     return value;
+  }
+
+  private PreparedStatement getPrepared(Connection connection, String query) throws SQLException {
+    if (preparedStatements.containsKey(query)) {
+      PreparedStatement stmt = connection.prepareStatement(query);
+      preparedStatements.put(query, stmt);
+      return stmt;
+    } else {
+      return preparedStatements.get(query);
+    }
+  }
+
+  private PreparedStatement getPrepared(Connection connection, String query, int params) throws SQLException {
+    if (preparedStatements.containsKey(query)) {
+      PreparedStatement stmt = connection.prepareStatement(query, params);
+      preparedStatements.put(query, stmt);
+      return stmt;
+    } else {
+      return preparedStatements.get(query);
+    }
   }
 
   public void exit() {
