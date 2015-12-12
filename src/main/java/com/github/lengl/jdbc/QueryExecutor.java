@@ -39,9 +39,9 @@ public class QueryExecutor implements QueryExecutable {
     PreparedStatement stmt = getPrepared(connection, query);
     ResultSet result = stmt.executeQuery();
     T value = handler.handle(result);
-    result.close();
-    stmt.close();
 
+    result.close();
+    connection.close();
     return value;
   }
 
@@ -52,10 +52,10 @@ public class QueryExecutor implements QueryExecutable {
     for (Map.Entry<Integer, Object> entry : args.entrySet()) {
       stmt.setObject(entry.getKey(), entry.getValue());
     }
-    ResultSet rs = stmt.executeQuery();
-    T value = handler.handle(rs);
-    rs.close();
-    stmt.close();
+    ResultSet result = stmt.executeQuery();
+    T value = handler.handle(result);
+
+    result.close();
     connection.close();
     return value;
   }
@@ -73,36 +73,48 @@ public class QueryExecutor implements QueryExecutable {
       throw new SQLException("Update failed, no rows affected");
 
     T value = handler.handle(statement.getGeneratedKeys());
-    statement.close();
     connection.close();
     return value;
   }
 
   private PreparedStatement getPrepared(Connection connection, String query) throws SQLException {
     if (preparedStatements.containsKey(query)) {
+      return preparedStatements.get(query);
+    } else {
       PreparedStatement stmt = connection.prepareStatement(query);
       preparedStatements.put(query, stmt);
       return stmt;
-    } else {
-      return preparedStatements.get(query);
     }
   }
 
   private PreparedStatement getPrepared(Connection connection, String query, int params) throws SQLException {
     if (preparedStatements.containsKey(query)) {
+      return preparedStatements.get(query);
+    } else {
       PreparedStatement stmt = connection.prepareStatement(query, params);
       preparedStatements.put(query, stmt);
       return stmt;
-    } else {
-      return preparedStatements.get(query);
     }
   }
 
   public void exit() {
     userCounter--;
-    if (source != null && userCounter == 0) {
-      source.close();
-      source = null;
+    if (userCounter == 0) {
+      if (source != null) {
+        source.close();
+        source = null;
+      }
+      if (preparedStatements != null) {
+        preparedStatements.values().stream().forEach(stmt -> {
+              try {
+                stmt.close();
+              } catch (SQLException ex) {
+                //TODO: Log it?
+              }
+            }
+        );
+        preparedStatements = null;
+      }
     }
   }
 }
