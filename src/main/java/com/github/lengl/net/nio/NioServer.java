@@ -4,6 +4,7 @@ import com.github.lengl.Messages.ClientMessages.ShutdownMessage;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.ServerMessageService;
 import com.github.lengl.net.Resources;
+import com.github.lengl.net.Server;
 import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.IOException;
@@ -17,15 +18,12 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
-public class NioServer implements Runnable {
+public class NioServer implements Server {
 
   // The host:port combination to listen on
   private InetAddress hostAddress;
@@ -72,7 +70,8 @@ public class NioServer implements Runnable {
 
   public static void main(String[] args) {
     try {
-      new Thread(new NioServer(null, 8123)).start();
+      Server server = new NioServer(null, 8123);
+      server.startServer();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -98,7 +97,7 @@ public class NioServer implements Runnable {
   }
 
   @Override
-  public void run() {
+  public void startServer() {
     mainThread = Thread.currentThread();
     //listening to console
     new Thread(() -> {
@@ -106,7 +105,7 @@ public class NioServer implements Runnable {
       while (true) {
         String line = scanner.nextLine();
         if ("/stop".equals(line)) {
-          shutdown();
+          destroyServer();
           System.exit(0);
         }
       }
@@ -257,7 +256,7 @@ public class NioServer implements Runnable {
     }
   }
 
-  private void shutdown() {
+  public void destroyServer() {
     //TODO: Not working properly.
     byte[] shutdownMsg = SerializationUtils.serialize(new ShutdownMessage());
     inputHandlers.keySet().stream().forEach(channel -> {

@@ -4,6 +4,7 @@ import com.github.lengl.Authorization.AuthorisationService;
 import com.github.lengl.Authorization.PasswordDBStorage;
 import com.github.lengl.ChatRoom.ChatRoomDBStorage;
 import com.github.lengl.ChatRoom.ChatRoomStorable;
+import com.github.lengl.Messages.ClientMessages.ShutdownMessage;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
 import com.github.lengl.Messages.MessageDBStorage;
@@ -19,6 +20,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -74,6 +76,18 @@ public class ThreadedServer implements MessageListener, Server {
       System.exit(0);
     }
 
+    //listening to console
+    new Thread(() -> {
+      Scanner scanner = new Scanner(System.in);
+      while (true) {
+        String line = scanner.nextLine();
+        if ("/stop".equals(line)) {
+          destroyServer();
+          System.exit(0);
+        }
+      }
+    }).start();
+
     isRunning = true;
     while (isRunning) {
       try {
@@ -101,8 +115,20 @@ public class ThreadedServer implements MessageListener, Server {
   //TODO: Find a way to reach this function
   public void destroyServer() {
     isRunning = false;
-    Set<Long> keys = handlers.keySet();
-    keys.forEach(key -> closeConnection(key));
+    handlers.values().forEach(handler -> {
+      try {
+        handler.send(new ShutdownMessage());
+      } catch (IOException ignored) {
+      }
+    });
+    handlers.keySet().forEach(id -> {
+      inputHandlers.remove(id);
+      authorisedHandlers.values().remove(id);
+      handlerThreads.get(id).interrupt();
+      handlerThreads.remove(id);
+      log.info("Connection " + id + "closed.");
+    });
+    handlers.clear();
     resources.close();
   }
 

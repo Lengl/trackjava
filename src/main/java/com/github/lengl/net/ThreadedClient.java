@@ -1,6 +1,7 @@
 package com.github.lengl.net;
 
 import com.github.lengl.Messages.ClientMessageService;
+import com.github.lengl.Messages.ClientMessages.ShutdownMessage;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
 
@@ -20,8 +21,8 @@ public class ThreadedClient implements MessageListener {
   public static final String HOST = "localhost";
   private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
   private ConnectionHandler handler;
-  private Thread socketHandlerThread;
-  private Thread inputThread;
+  public Thread socketHandlerThread;
+  public Thread inputThread;
   private volatile long myId = -1;
   private InputHandler inputHandler;
 
@@ -108,6 +109,9 @@ public class ThreadedClient implements MessageListener {
       }
     } else {
       System.out.printf("%s: %s\n", message.getAuthor(), message.getBody());
+      if (message instanceof ShutdownMessage) {
+        inputThread.interrupt();
+      }
     }
   }
 
