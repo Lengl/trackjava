@@ -111,6 +111,7 @@ public class ThreadedClient implements MessageListener {
       System.out.printf("%s: %s\n", message.getAuthor(), message.getBody());
       if (message instanceof ShutdownMessage) {
         inputThread.interrupt();
+        Thread.currentThread().interrupt();
       }
     }
   }
