@@ -9,7 +9,9 @@ import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Users.UserDBStorage;
 import com.github.lengl.jdbc.QueryExecutor;
 
-public class Resources {
+import java.io.Closeable;
+
+public class Resources implements Closeable {
   public final QueryExecutor queryExecutor;
   public final AuthorisationService authorisationService;
   public final MessageStorable historyStorage;

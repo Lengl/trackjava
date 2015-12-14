@@ -23,7 +23,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
       while (r.next()) {
         if (r.getLong("chat_id") != chat_id) {
           if (chatRoom != null)
-            allChats.put(chat_id, chatRoom);
+            synchronized (allChats) {
+              allChats.put(chat_id, chatRoom);
+            }
           chat_id = r.getLong("chat_id");
           chatRoom = new ChatRoom(r.getLong("chat_id"));
         }
@@ -32,7 +34,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
         }
       }
       if (chatRoom != null)
-        allChats.put(chat_id, chatRoom);
+        synchronized (allChats) {
+          allChats.put(chat_id, chatRoom);
+        }
       return true;
     });
   }
@@ -42,7 +46,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
   public Long createChatRoom() throws Exception {
     return queryExecutor.updateQuery("INSERT INTO \"chatrooms\" DEFAULT VALUES;", new HashMap<>(), (r) -> {
       if (r.next()) {
-        allChats.put(r.getLong(1), new ChatRoom(r.getLong(1)));
+        synchronized (allChats) {
+          allChats.put(r.getLong(1), new ChatRoom(r.getLong(1)));
+        }
         return r.getLong(1);
       } else {
         return null;
@@ -64,7 +70,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
       args.put(2, userId);
 
       String ret = queryExecutor.updateQuery("INSERT INTO \"chatroom_users\" (chat_id, participant_id) VALUES (?, ?);", args, (r) -> "User added successfully");
-      room.addParticipant(userId);
+      synchronized (allChats) {
+        room.addParticipant(userId);
+      }
       return ret;
     } else {
       return "Already in this chat";
@@ -85,7 +93,9 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
       args.put(2, userId);
       //TODO: Write something that makes more sence
       String ret = queryExecutor.execQuery("DELETE FROM \"chatroom_users\" WHERE chat_id = ? AND participant_id = ?;", args, (r) -> "User removed successfully");
-      room.removeParticipant(userId);
+      synchronized (allChats) {
+        room.removeParticipant(userId);
+      }
       return ret;
     } else {
       return "User doesn't belong this chat";
@@ -117,7 +127,7 @@ public class ChatRoomDBStorage implements ChatRoomStorable {
   }
 
   @Override
-  public boolean isParticipant(Long roomId, Long userId) throws Exception {
+  public synchronized boolean isParticipant(Long roomId, Long userId) throws Exception {
     return allChats.containsKey(roomId) && allChats.get(roomId).hasParticipant(userId);
   }
 

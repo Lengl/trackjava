@@ -25,7 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-public class ThreadedServer implements MessageListener {
+public class ThreadedServer implements MessageListener, Server {
 
   public static final int PORT = 8123;
   private final Logger log = Logger.getLogger(ThreadedServer.class.getName());
@@ -65,32 +65,41 @@ public class ThreadedServer implements MessageListener {
     server.startServer();
   }
 
-  public void startServer() throws Exception {
+  public void startServer() {
     log.info("Started, waiting for connection");
-    resources = new Resources();
+    try {
+      resources = new Resources();
+    } catch (Exception e) {
+      log.log(Level.SEVERE, "Unable to open resources: ", e);
+      System.exit(0);
+    }
 
     isRunning = true;
     while (isRunning) {
-      Socket socket = sSocket.accept();
-      log.info("Accepted. " + socket.getInetAddress());
-      ConnectionHandler handler = new SocketConnectionHandler(socket);
-      handler.addListener(this);
+      try {
+        Socket socket = sSocket.accept();
+        log.info("Accepted. " + socket.getInetAddress());
+        ConnectionHandler handler = new SocketConnectionHandler(socket);
+        handler.addListener(this);
 
 
-      long senderId = internalCounterID.incrementAndGet();
-      handlers.put(senderId, handler);
-      inputHandlers.put(senderId, new ServerMessageService(resources));
-      Thread thread = new Thread(handler);
-      thread.start();
-      handlerThreads.put(senderId, thread);
+        long senderId = internalCounterID.incrementAndGet();
+        handlers.put(senderId, handler);
+        inputHandlers.put(senderId, new ServerMessageService(resources));
+        Thread thread = new Thread(handler);
+        thread.start();
+        handlerThreads.put(senderId, thread);
 
-      //Send to client it's ID
-      handler.send(new Message(String.valueOf(senderId)));
+        //Send to client it's ID
+        handler.send(new Message(String.valueOf(senderId)));
+      } catch (IOException e) {
+        log.log(Level.SEVERE, "IO Exception: ", e);
+      }
     }
   }
 
   //TODO: Find a way to reach this function
-  public void stopServer() {
+  public void destroyServer() {
     isRunning = false;
     Set<Long> keys = handlers.keySet();
     keys.forEach(key -> closeConnection(key));
@@ -120,7 +129,7 @@ public class ThreadedServer implements MessageListener {
           closeConnection(id);
         }
         if (ret instanceof AuthMessage) {
-          if(authorisedHandlers.containsKey(id))
+          if(authorisedHandlers.values().contains(id))
             authorisedHandlers.values().remove(id);
           authorisedHandlers.put(((AuthMessage) ret).getAuthorized().getId(), id);
         }
