@@ -1,19 +1,12 @@
 package com.github.lengl.net;
 
-import com.github.lengl.Authorization.AuthorisationService;
-import com.github.lengl.Authorization.PasswordDBStorage;
-import com.github.lengl.ChatRoom.ChatRoomDBStorage;
-import com.github.lengl.ChatRoom.ChatRoomStorable;
 import com.github.lengl.Messages.ClientMessages.ShutdownMessage;
 import com.github.lengl.Messages.InputHandler;
 import com.github.lengl.Messages.Message;
-import com.github.lengl.Messages.MessageDBStorage;
-import com.github.lengl.Messages.MessageStorable;
 import com.github.lengl.Messages.ServerMessageService;
 import com.github.lengl.Messages.ServerMessages.AuthMessage;
 import com.github.lengl.Messages.ServerMessages.QuitMessage;
 import com.github.lengl.Messages.ServerMessages.ResponseMessage;
-import com.github.lengl.Users.UserDBStorage;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -155,7 +148,7 @@ public class ThreadedServer implements MessageListener, Server {
           closeConnection(id);
         }
         if (ret instanceof AuthMessage) {
-          if(authorisedHandlers.values().contains(id))
+          if (authorisedHandlers.values().contains(id))
             authorisedHandlers.values().remove(id);
           authorisedHandlers.put(((AuthMessage) ret).getAuthorized().getId(), id);
         }
@@ -165,18 +158,18 @@ public class ThreadedServer implements MessageListener, Server {
         closeConnection(id);
       }
     } else {
-      if (message.getChatId() == null) {
-
-        for (ConnectionHandler handler : handlers.values()) {
+      try {
+        if (message.getChatId() == null) {
+          //send to default chat (only himself)
+          handlers.get(id).send(ret);
+        /*for (ConnectionHandler handler : handlers.values()) {
           try {
             handler.send(message);
           } catch (IOException e) {
             log.log(Level.SEVERE, "Unable to send message", e);
           }
-        }
-
-      } else {
-        try {
+        }*/
+        } else {
           Set<Long> participants = resources.chatRoomStorage.getParticipantIDs(message.getChatId());
           if (participants != null) {
             if (!participants.contains(message.getAuthorId())) {
@@ -210,9 +203,9 @@ public class ThreadedServer implements MessageListener, Server {
               closeConnection(id);
             }
           }
-        } catch (Exception ex) {
-          log.log(Level.SEVERE, "Unable to receive chat participants", ex);
         }
+      } catch (Exception ex) {
+        log.log(Level.SEVERE, "Unable to receive chat participants", ex);
       }
     }
   }

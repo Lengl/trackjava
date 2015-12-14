@@ -41,9 +41,11 @@ public class MyWorker implements Runnable {
     } else {
       //If it is a general message
       if (message.getChatId() == null) {
-        server.inputHandlers.keySet().stream().forEach(ssocket -> {
+        //send to default chat (only himself)
+        server.send(socket, SerializationUtils.serialize(ret));
+/*        server.inputHandlers.keySet().stream().forEach(ssocket -> {
           server.send(ssocket, SerializationUtils.serialize(ret));
-        });
+        });*/
       } else {
         try {
           Set<Long> participants = server.resources.chatRoomStorage.getParticipantIDs(message.getChatId());

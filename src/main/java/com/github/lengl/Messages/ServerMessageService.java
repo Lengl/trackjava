@@ -137,7 +137,7 @@ public class ServerMessageService implements InputHandler {
         }
       }
     } else {
-      message.setAuthor("unknownUser" + message.getSenderId());
+      return new ResponseMessage("To send messages you have to be authorized! (/login <user> <password>)");
     }
     return message;
   }
