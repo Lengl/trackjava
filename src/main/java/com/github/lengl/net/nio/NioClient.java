@@ -67,73 +67,78 @@ public class NioClient {
     });
     consoleThread.start();
 
+    try {
+      selector = Selector.open();
+      channel = SocketChannel.open();
+      channel.configureBlocking(false);
+      channel.connect(new InetSocketAddress("localhost", PORT));
+      channel.register(selector, SelectionKey.OP_CONNECT);
 
-    selector = Selector.open();
-    channel = SocketChannel.open();
-    channel.configureBlocking(false);
-    channel.connect(new InetSocketAddress("localhost", PORT));
-    channel.register(selector, SelectionKey.OP_CONNECT);
-
-    while (!Thread.currentThread().isInterrupted()) {
-      //log.info("Waiting on select()...");
-      int num = selector.select();
-      //log.info("Raised " + num + " events");
+      while (!Thread.currentThread().isInterrupted()) {
+        //log.info("Waiting on select()...");
+        int num = selector.select();
+        //log.info("Raised " + num + " events");
 
 
-      Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-      while (keyIterator.hasNext()) {
-        SelectionKey sKey = keyIterator.next();
-        keyIterator.remove();
+        Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+        while (keyIterator.hasNext()) {
+          SelectionKey sKey = keyIterator.next();
+          keyIterator.remove();
 
-        if (!sKey.isValid()) {
-          continue;
-        }
-
-        if (sKey.isConnectable()) {
-          log.info("[connectable] " + sKey.hashCode());
-
-          try {
-            channel.finishConnect();
-          } catch (Exception e) {
-            //TODO: log it!
-            System.err.println("Unable to connect server");
-            System.exit(0);
-          }
-          System.out.println("Connected successfully!");
-
-          // теперь в канал можно писать
-          sKey.interestOps(SelectionKey.OP_READ);
-        } else if (sKey.isReadable()) {
-          log.info("[readable]");
-
-          buffer.clear();
-          int numRead = channel.read(buffer);
-          if (numRead < 0) {
-            break;
-          }
-          //log.info("From server: " + new String(buffer.array()));
-          Message msg = (Message) SerializationUtils.deserialize(buffer.array());
-          System.out.printf("%s: %s\n", msg.getAuthor(), msg.getBody());
-          if (msg instanceof ShutdownMessage) {
-            consoleThread.interrupt();
-            System.exit(0);
+          if (!sKey.isValid()) {
+            continue;
           }
 
-        } else if (sKey.isWritable()) {
-          log.info("[writable]");
+          if (sKey.isConnectable()) {
+            log.info("[connectable] " + sKey.hashCode());
 
-          String line = queue.poll();
-          if (line != null) {
-            Message msg = inputHandler.react(new Message(line));
-            if (msg != null) {
-              byte[] userInput = SerializationUtils.serialize(msg);
-              channel.write(ByteBuffer.wrap(userInput));
-              // Ждем записи в канал
-              sKey.interestOps(SelectionKey.OP_READ);
+            try {
+              channel.finishConnect();
+            } catch (Exception e) {
+              //TODO: log it!
+              System.err.println("Unable to connect server");
+              System.exit(0);
+            }
+            System.out.println("Connected successfully!");
+
+            // теперь в канал можно писать
+            sKey.interestOps(SelectionKey.OP_READ);
+          } else if (sKey.isReadable()) {
+            log.info("[readable]");
+
+            buffer.clear();
+            int numRead = channel.read(buffer);
+            if (numRead < 0) {
+              break;
+            }
+            //log.info("From server: " + new String(buffer.array()));
+            Message msg = (Message) SerializationUtils.deserialize(buffer.array());
+            System.out.printf("%s: %s\n", msg.getAuthor(), msg.getBody());
+            if (msg instanceof ShutdownMessage) {
+              consoleThread.interrupt();
+              System.exit(0);
+            }
+
+          } else if (sKey.isWritable()) {
+            log.info("[writable]");
+
+            String line = queue.poll();
+            if (line != null) {
+              Message msg = inputHandler.react(new Message(line));
+              if (msg != null) {
+                byte[] userInput = SerializationUtils.serialize(msg);
+                channel.write(ByteBuffer.wrap(userInput));
+                // Ждем записи в канал
+                sKey.interestOps(SelectionKey.OP_READ);
+              }
             }
           }
         }
       }
+    } catch (IOException e) {
+      System.err.println(e.getMessage());
+      consoleThread.interrupt();
+      System.exit(0);
     }
   }
 
