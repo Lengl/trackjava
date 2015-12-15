@@ -34,7 +34,7 @@ public class ServerMessageService implements InputHandler {
           "/user_info <user_id>\n" +
           "/user_pass <old password> <new password>\n" +
           "/quit";
-  private static final String UNAUTHORIZED =
+  public static final String UNAUTHORIZED =
       "You need to authorise (/login) or to register (/signin) yourself to use this command.";
   private final Logger log = Logger.getLogger(ServerMessageService.class.getName());
   private final AuthorisationService authorisationService;

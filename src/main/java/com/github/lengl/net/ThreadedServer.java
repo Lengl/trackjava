@@ -48,7 +48,7 @@ public class ThreadedServer implements MessageListener, Server {
     }
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     try {
       LogManager.getLogManager().readConfiguration(
           ThreadedServer.class.getResourceAsStream("/logging.properties"));

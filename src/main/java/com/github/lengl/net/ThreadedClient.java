@@ -20,6 +20,11 @@ public class ThreadedClient implements MessageListener {
   public static final int PORT = 8123;
   public static final String HOST = "localhost";
   private final Logger log = Logger.getLogger(ThreadedClient.class.getName());
+
+  public ConnectionHandler getHandler() {
+    return handler;
+  }
+
   private ConnectionHandler handler;
   public Thread socketHandlerThread;
   public Thread inputThread;
