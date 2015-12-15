@@ -1,8 +1,13 @@
 # Ignore my log files
-application_log.txt*
+/logs/application_log*
 
 #ignore my database
-passwordStore.mystore
+/userStore.mystore
+/com/github/lengl/Tester.java
+/passwordStore.mystore
+
+#ignore my messages base
+/messages/*.mystore
 
 # Windows image file caches
 *.db
